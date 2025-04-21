@@ -22,7 +22,7 @@ const RootHeader = () => {
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-12 max-w-7xl mt-26 mx-auto px-8">
+                <div className="flex flex-col gap-12 max-w-7xl w-[80vw] mt-26 mx-auto px-8">
                     <h1 className="text-[clamp(2rem,4vw,4rem)] font-bold text-[#121211] text-center ">AI-Powered Cloud Storage Reinvented with DNA, Graphene & Brain Signals</h1>
                     <p className="text-[#74726f] text-center text-[clamp(1rem,2vw,2rem)]">Neuron fuses Artificial Intelligence, synthetic biology, and advanced materials to unlock the future of cloud storage and human-data interaction.</p>
                     <div className="flex justify-center items-center gap-9 sm:flex-row flex-col">

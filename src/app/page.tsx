@@ -1,3 +1,4 @@
+import RootDownload from "@/components/download/root-download";
 import RootHeader from "@/components/header/root-header";
 import RootNavbar from "@/components/navbar/root-navbar";
 import Overview from "@/components/overview/root-overview";
@@ -11,6 +12,7 @@ export default function Home() {
       <main className="w-full">
         <div className="container mx-auto px-6">
           <Overview />
+          <RootDownload />
         </div>
       </main>
     </>

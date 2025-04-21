@@ -37,8 +37,8 @@ const RootOverview = () => {
                 <div className="px-5 py-2 bg-[#e7e5e2] rounded-[56px] font-medium">AI in Neuron</div>
             </div>
 
-            <div className="flex justify-between max-lg:flex-col-reverse max-lg:gap-6">
-                <div className="flex w-[394px] flex-col gap-12">
+            <div className="flex justify-between max-lg:flex-col-reverse max-2xl:gap-6">
+                <div className="flex max-w-[394px] flex-col gap-12">
                     {
                         features.map((feature, index) => (
                             <div key={index} className="border-l-[2px] border-l-[#121211] pl-8 ">
