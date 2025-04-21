@@ -1,9 +1,18 @@
+import RootHeader from "@/components/header/root-header";
+import RootNavbar from "@/components/navbar/root-navbar";
+import Overview from "@/components/overview/root-overview";
 
 
 export default function Home() {
   return (
     <>
-      <h1>Hello World</h1>
+      <RootHeader />
+      <RootNavbar />
+      <main className="w-full">
+        <div className="container mx-auto px-6">
+          <Overview />
+        </div>
+      </main>
     </>
   );
 }
