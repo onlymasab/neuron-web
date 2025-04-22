@@ -8,7 +8,7 @@ const RootPricing = () => {
         setPlan(!plan);
     }
     return (
-        <div className="w-full py-18 mt-30" style={{ background: "linear-gradient(251deg, #E2E7FF 0%, #FFEAEA 50%, #D9DAFB 100%)" }}>
+        <div id="pricing" className="w-full py-18 mt-30" style={{ background: "linear-gradient(251deg, #E2E7FF 0%, #FFEAEA 50%, #D9DAFB 100%)" }}>
             <div className="container mx-auto px-4 ">
                 <div className="flex flex-col gap-24">
                     <div className="flex justify-between items-center max-lg:flex-col">
