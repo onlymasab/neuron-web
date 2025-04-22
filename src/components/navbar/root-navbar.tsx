@@ -45,7 +45,7 @@ const RootNavbar: React.FC = () => {
     ];
 
     return (
-        <nav className="sticky top-0 w-full shadow-[0px_2px_6px_rgba(0,0,0,0.15)] bg-white">
+        <nav className="sticky top-0 w-full shadow-[0px_2px_6px_rgba(0,0,0,0.15)] bg-white z-30">
             <div className="container mx-auto px-6 h-16 max-sm:pr-3 flex relative justify-between items-center">
                 <button
                     className="hidden p-2 cursor-pointer border-none max-lg:block"
