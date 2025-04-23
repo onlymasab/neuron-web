@@ -1,6 +1,9 @@
 import RootDownload2 from "@/components/download-2/root-download2";
 import RootDownload from "@/components/download/root-download";
 import RootExplore from "@/components/explore/root-explore";
+import RootFaqs from "@/components/faqs/root-faqs";
+import FollowUs from "@/components/followUs";
+import RootFooter from "@/components/footer/root-footer";
 import RootHeader from "@/components/header/root-header";
 import RootNavbar from "@/components/navbar/root-navbar";
 import Overview from "@/components/overview/root-overview";
@@ -24,6 +27,9 @@ export default function Home() {
         <RootDownload2 />
         <RootResources />
         <RootTeam />
+        <RootFaqs />
+        <FollowUs />
+        <RootFooter />
       </main>
     </>
   );

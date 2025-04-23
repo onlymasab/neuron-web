@@ -6,8 +6,8 @@ const RootHeader = () => {
         <header className="w-full min-h-screen">
             <div className="container mx-auto">
                 <div className="flex items-center justify-between p-4">
-                    <div>
-                        <LogoSvg />
+                    <div className="w-[105px] h-[24px]">
+                        <LogoSvg width={105} height={24} />
                     </div>
                     <div className="flex items-center gap-2">
                         <p className="text-sm font-medium">Sign in</p>
@@ -28,12 +28,12 @@ const RootHeader = () => {
                     <div className="flex justify-center items-center gap-9 sm:flex-row flex-col">
                         <button className="bg-[#0d6aff] text-white px-5 py-2.5 rounded-full font-medium">Create account</button>
                         <button className="bg-[#121211] text-white px-5 py-2.5 rounded-full font-medium">Downloads</button>
-                        <a href="#" className="text-[#121211] font-medium underline underline-offset-auto">See plans and pricing</a>
+                        <a href="#pricing" className="text-[#121211] font-medium underline underline-offset-auto">See plans and pricing</a>
                     </div>
                 </div>
 
                 <div className="mt-14">
-                    <Image src="/images/hero.png" alt="hero" width={1600} height={1073} priority/>
+                    <Image src="/images/hero.png" alt="hero" width={1600} height={1073} priority />
                 </div>
             </div>
         </header>
