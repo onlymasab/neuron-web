@@ -28,7 +28,7 @@ const RootOverview = () => {
         <div id="overview" className="w-full flex flex-col gap-8 mt-14">
             <div>
                 <h1 className="font-medium text-base/6">OVERVIEW</h1>
-                <h2 className="text-[40px] font-semibold mt-4">Securely save and share what's important</h2>
+                <h2 className="text-[40px] font-semibold mt-4">Securely save and share whats important</h2>
             </div>
             <div className="flex items-center gap-4 flex-wrap">
                 <div className="px-5 py-2 bg-[#121211] rounded-[56px] text-white font-medium">Backup and Protect</div>

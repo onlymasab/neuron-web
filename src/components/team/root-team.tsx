@@ -1,4 +1,4 @@
-import { url } from "inspector"
+
 import Image from "next/image"
 import { FacebookIcon, GoogleIcon, GithubIcon, LinkedinIcon, WhatsappIcon, InstagramIcon } from "../socialIcons"
 

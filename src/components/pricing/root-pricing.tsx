@@ -4,9 +4,6 @@ import { useState } from "react";
 
 const RootPricing = () => {
     const [plan, setPlan] = useState(true);
-    const togglePlan = () => {
-        setPlan(!plan);
-    }
     return (
         <div id="pricing" className="w-full py-18 mt-30" style={{ background: "linear-gradient(251deg, #E2E7FF 0%, #FFEAEA 50%, #D9DAFB 100%)" }}>
             <div className="container mx-auto px-4 ">
