@@ -1,0 +1,39 @@
+<<<<<<< HEAD
+=======
+@import "tailwindcss";
+
+.container {
+  width: 100%;
+  @media (width >= 40rem /* 640px */) {
+      max-width: 40rem /* 640px */;
+  }
+  @media (width >= 48rem /* 768px */) {
+      max-width: 48rem /* 768px */;
+  }
+  @media (width >= 64rem /* 1024px */) {
+      max-width: 64rem /* 1024px */;
+  }
+  @media (width >= 80rem /* 1280px */) {
+      max-width: 80rem /* 1280px */;
+  }
+  @media (width >= 100rem /* 1536px */) {
+      max-width: 100rem /* 1536px */;
+  }
+}
+
+@layer utilities {
+
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+}
+>>>>>>> 794f9a9137d1dd2a1d08a4305a2cb8bd9af51735
