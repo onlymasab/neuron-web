@@ -19,7 +19,7 @@ const RootNavbar: React.FC = () => {
             id: "#download"
         },
         {
-            item: "Explore OneDrive",
+            item: "Explore Neuron",
             id: "#explore"
         },
         {
