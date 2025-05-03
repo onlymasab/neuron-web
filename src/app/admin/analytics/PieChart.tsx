@@ -1,6 +1,6 @@
 "use client"
 
-import { Pie, PieChart } from "recharts"
+import { LabelList, Pie, PieChart } from "recharts"
 
 import {
     Card,
@@ -13,12 +13,14 @@ import {
     ChartContainer,
     ChartLegend,
     ChartLegendContent,
+    ChartTooltip,
+    ChartTooltipContent,
 } from "@/components/ui/chart"
 const chartData = [
-    { continent: "africa", visitors: 500, fill: "#ff5630" },
-    { continent: "europe", visitors: 1500, fill: "#006c9c" },
-    { continent: "asia", visitors: 2500, fill: "#ffd666" },
-    { continent: "america", visitors: 3500, fill: "#00a76f" },
+    { continent: "africa", visitors: 500, fill: "#ff5630", percentage: "6.3%" },
+    { continent: "europe", visitors: 1500, fill: "#006c9c", percentage: "18.8%" },
+    { continent: "asia", visitors: 2500, fill: "#ffd666", percentage: "31.3%" },
+    { continent: "america", visitors: 3500, fill: "#00a76f", percentage: "43.8%" },
 ]
 
 const chartConfig = {
@@ -45,20 +47,30 @@ const chartConfig = {
 
 export function AnalyticsPieChart() {
     return (
-        <Card className="flex flex-col">
+        <Card className="flex flex-col gap-0">
             <CardHeader className="items-left pb-0">
                 <CardTitle>Current visits</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
                 <ChartContainer
                     config={chartConfig}
-                    className="mx-auto aspect-square max-h-[300px]"
+                    className="mx-auto aspect-square max-h-[300px] [&_.recharts-text]:fill-background"
                 >
                     <PieChart>
-                        <Pie data={chartData} dataKey="visitors" />
+                        <ChartTooltip
+                            content={<ChartTooltipContent nameKey="visitors" hideLabel />}
+                        />
+                        <Pie data={chartData} dataKey="visitors" >
+                        <LabelList
+                            dataKey="percentage"
+                            className="fill-background"
+                            stroke="none"
+                            fontSize={12}
+                        />
+                        </Pie>
                         <ChartLegend
                             content={<ChartLegendContent nameKey="continent" />}
-                            className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                            className="-translate-y-2  gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
                         />
                     </PieChart>
                 </ChartContainer>

@@ -2,6 +2,7 @@
 import Image from 'next/image';
 import { CardLineChart } from './LineChart';
 import { AnalyticsPieChart } from './PieChart';
+import { AnalyticsBarChart } from './BarChart';
 
 const Analytics = async () => {
     const card = [
@@ -20,7 +21,7 @@ const Analytics = async () => {
             value: "1.35m",
             color: "text-[#5522b7]",
             barColor: "#5522b7",
-            sale: "↝ +2.6%",
+            sale: "↯ -0.1%",
             iconsrc: "/svgs/ic-glass-users.svg",
             bgColor: "linear-gradient(135deg, rgba(239, 214, 255, 0.48), rgba(198, 132, 255, 0.48)"
         },
@@ -58,7 +59,7 @@ const Analytics = async () => {
                                         <span className={`block font-bold text-3xl 2xl:text-4xl ${item.color}`}>{item.value}</span>
                                     </div>
                                     <div className='space-y-10'>
-                                        <span className={`${item.barColor} text-end block text-sm 2xl:text-xl font-medium`}>{item.sale}</span>
+                                        <span className={`${item.color} text-end block text-sm 2xl:text-xl font-medium`}>{item.sale}</span>
                                         <div className={`w-30 h-20`}>
                                             {/* <BarChartMini color={item.barColor} /> */}
                                             <CardLineChart color={item.barColor} />
@@ -75,14 +76,9 @@ const Analytics = async () => {
                     <AnalyticsPieChart />
                 </div>
                 <div className='col-span-8'>
-                    {/* <AreaBarChart /> */}
+                    <AnalyticsBarChart />
                 </div>
             </div>
-           {/* <div className='grid grid-cols-12 gap-5 p-[1vw]'>
-                <div className="col-span-8">
-                    <AppDataTable columns={columns} data={data} />
-                </div>
-            </div> */}
 
         </>
     )
