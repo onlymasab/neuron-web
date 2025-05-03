@@ -14,11 +14,9 @@ export const metadata: Metadata = {
 };
 
 export default function CloudLayout({
-    children,
-    sidebar, header
+    children, header
 }: Readonly<{
     children: React.ReactNode;
-    sidebar?: React.ReactNode;
     header?: React.ReactNode;
 }>) {
     return (

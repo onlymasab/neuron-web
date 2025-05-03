@@ -21,7 +21,7 @@ const Analytics = async () => {
             value: "1.35m",
             color: "text-[#5522b7]",
             barColor: "#5522b7",
-            sale: "↝ +2.6%",
+            sale: "↯ -0.1%",
             iconsrc: "/svgs/ic-glass-users.svg",
             bgColor: "linear-gradient(135deg, rgba(239, 214, 255, 0.48), rgba(198, 132, 255, 0.48)"
         },

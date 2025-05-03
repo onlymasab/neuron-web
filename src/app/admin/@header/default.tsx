@@ -1,8 +1,18 @@
+"use client";
 import { LogoSvg } from "@/components/logo_svg"
 import Link from "next/link"
+import { usePathname } from "next/navigation";
+
 
 const Header = () => {
+    const currentPath = usePathname();
 
+    const links = [
+        { href: "/admin", label: "App" },
+        { href: "/admin/ecommerce", label: "Ecommerce" },
+        { href: "/admin/analytics", label: "Analytics" },
+        { href: "/admin/orders", label: "Orders" },
+    ];
     return (
         <header className="flex w-full justify-between items-center bg-white/70 py-[1vh] px-4 rounded-b-2xl">
             <div className="flex flex-1 items-center gap-10">
@@ -21,21 +31,16 @@ const Header = () => {
                 </div>
             </div>
             <div className="flex flex-1 gap-15 justify-center">
-                <Link className="text-md 2xl:text-xl text-gray-400 font-medium cursor-pointer" href="/admin">
-                    App
-                </Link>
-                <Link className="text-md 2xl:text-xl text-gray-400 font-medium cursor-pointer" href="/admin/ecommerce">
-                    Ecommerce
-                </Link>
-                <Link className="text-md 2xl:text-xl text-gray-400 font-medium cursor-pointer" href="/admin/analytics">
-                    Analytics
-                </Link>
-                <Link className="text-md 2xl:text-xl text-gray-400 font-medium cursor-pointer" href="/admin/banking">
-                    Banking
-                </Link>
-                <Link className="text-md 2xl:text-xl text-[#c52f96] font-medium cursor-pointer" href="/admin/orders">
-                    Orders
-                </Link>
+                {links.map((link) => (
+                    <Link
+                        key={link.href}
+                        href={link.href}
+                        className={`text-md 2xl:text-xl font-medium cursor-pointer ${currentPath === link.href ? "text-[#c52f96]" : "text-gray-400"
+                            }`}
+                    >
+                        {link.label}
+                    </Link>
+                ))}
             </div>
             <div className="flex flex-1 relative justify-end">
                 <div className="size-3.5 absolute -top-0.5 right-0 border border-white rounded-full bg-[#be625c]" />
