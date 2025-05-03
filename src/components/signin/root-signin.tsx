@@ -7,7 +7,7 @@ interface SignInProps {
     setShowSignin: (value: boolean) => void;
 }
 
-function RootSignIn({setShowSignin}: SignInProps) {
+function  RootSignIn({setShowSignin}: SignInProps) {
     const [showSignupModal, setShowSignupModal] = useState(false);
     return (
         <>
@@ -59,7 +59,7 @@ function RootSignIn({setShowSignin}: SignInProps) {
                     
                 >
                     <GoogleLoginButton onUserNotFound={() => setShowSignupModal(true)}/>
-                </div>
+                </div> 
 
             </div>
 
