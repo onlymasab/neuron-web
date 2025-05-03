@@ -38,7 +38,7 @@ const RootOverview = () => {
             </div>
 
             <div className="flex justify-between max-lg:flex-col-reverse max-2xl:gap-25">
-                <div className="flex max-w-[394px] flex-col gap-12">
+                <div className="flex w-[394px] flex-col gap-12">
                     {
                         features.map((feature, index) => (
                             <div key={index} className="border-l-[2px] border-l-[#121211] pl-8 ">
