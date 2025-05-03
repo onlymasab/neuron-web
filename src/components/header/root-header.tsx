@@ -7,7 +7,7 @@ const RootHeader = () => {
             <div className="container mx-auto">
                 <div className="flex items-center justify-between p-4">
                     <div className="w-[105px] h-[24px]">
-                        <LogoSvg width={105} height={24} />
+                        <LogoSvg />
                     </div>
                     <div className="flex items-center gap-2">
                         <p className="text-sm font-medium">Sign in</p>

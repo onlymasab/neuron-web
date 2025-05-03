@@ -52,7 +52,7 @@ const RootFooter = () => {
                 <div className='container mx-auto px-10 '>
                     <div className='flex max-sm:flex-col py-15 max-sm:gap-10 max-sm:items-center  justify-between'>
                         <div className='w-[177px] h-[70px]'>
-                            <LogoSvg width={177} height={70} />
+                            <LogoSvg />
                         </div>
                         <p className='text-[#74726f] text-lg max-sm:w-[80vw] w-[35vw]'>Secure. Smart. Scalable. Effortless cloud storage for all your files — anytime, anywhere.</p>
                     </div>
