@@ -33,7 +33,7 @@ const RootHeader = () => {
         <header className="w-full min-h-screen">
             <div className="relative container mx-auto">
                 <div className="flex items-center justify-between p-4">
-                    <div className="w-[105px] h-[24px]">
+                    <div className="w-[110px] h-12">
                         <LogoSvg />
                     </div>
 
@@ -83,12 +83,12 @@ const RootHeader = () => {
                     )}
                 </div>
 
-                <ProfileCard
+                {/* <ProfileCard
                             name={userName}
                             email={userEmail}
                             profilePic={userImage}
                             onSignOut={handleSignOut}
-                        />
+                        /> */}
 
                 {showProfileCard && (
                     <div className="absolute top-16 right-5 w-[440px]">
@@ -101,7 +101,7 @@ const RootHeader = () => {
                     </div>
                 )}
 
-                <div className="flex flex-col gap-12 max-w-7xl w-[80vw] mt-[12vh] mx-auto px-8">
+                <div className="flex flex-col gap-12 max-w-7xl w-[80vw] mt-[10vh] mx-auto px-8">
                     <h1 className="text-[clamp(2rem,4vw,4rem)] font-bold text-[#121211] text-center">
                         AI-Powered Cloud Storage Reinvented with DNA, Graphene & Brain Signals
                     </h1>

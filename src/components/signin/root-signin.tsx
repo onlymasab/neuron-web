@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import RootSignUp from '../signup/root-signup';  // Adjust the import as needed
 import GoogleLoginButton from '../GoogleLoginButton';
+import { LogoIconSvg } from '../logo_svg';
 
 interface SignInProps {
     setShowSignin: React.Dispatch<React.SetStateAction<boolean>>;
@@ -55,26 +56,37 @@ function RootSignIn({ setShowSignin, isUserRegistered, onUserNotFound }: SignInP
                         </svg>
                     </button>
                     <div>
-                        <svg
-                            width="78"
-                            height="78"
-                            viewBox="0 0 78 78"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            {/* Insert your long SVG content here */}
-                        </svg>
+                        <LogoIconSvg />
                     </div>
+                    <h1 className="mt-4 text-xl font-semibold tracking-normal leading-snug text-black">
+                        Sign In to Neuron
+                    </h1>
+                    <p className="mt-2 text-xs font-medium tracking-normal leading-4 text-center text-[#808080]">
+                        Welcome back! Please sign in to continue
+                    </p>
                 </header>
 
                 {/* Google Login Button with error handling */}
                 <div className='mx-auto'>
-                    <GoogleLoginButton onUserNotFound={handleUserNotFound} />
+                    <div
+                        className="rounded-full hover:shadow-md cursor-pointer">
+                        <GoogleLoginButton onUserNotFound={handleUserNotFound} />
+                    </div>
                 </div>
-                
+
 
                 {/* Link to switch between SignIn and SignUp */}
-                <p className='text-center'>By signing in, you agree to our Terms and Privacy Policy. Your data is safe with us.</p>
+                <p className="text-xs font-medium tracking-wide leading-4 text-center text-[#808080]">
+                By signing in, you agree to our{" "}
+                <a href="#" className="underline">
+                    Terms
+                </a>{" "}
+                and{" "}
+                <a href="#" className="underline">
+                    Privacy Policy
+                </a>
+                . Your data is safe with us.
+            </p>
             </section>
         </>
     );
