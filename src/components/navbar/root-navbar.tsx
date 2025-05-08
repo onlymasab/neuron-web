@@ -1,9 +1,20 @@
 "use client";
 
+import { useAuthStore } from "@/stores/useAuthStore";
+import Link from "next/link";
 import React, { useState } from "react";
 
 const RootNavbar: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const {
+            isSignedIn,
+            userName,
+            userImage,
+            userEmail,
+            signInWithGoogle,
+            signOut,
+        } = useAuthStore();
 
     const toggleMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -65,7 +76,10 @@ const RootNavbar: React.FC = () => {
 
                 <div className="flex gap-6 items-center max-2xl:gap-4">
                     <NavbarButton text="See plans & pricing" id="plan" />
-                    <NavbarButton text="Sign in" id="signin" />
+                    {isSignedIn 
+                        ? <NavbarButton text="Cloud App" id="cloud" /> 
+                        : <NavbarButton text="Sign in" id="signin" />
+                    }
                 </div>
             </div>
 
@@ -135,15 +149,30 @@ const NavbarItem: React.FC<NavbarItemProps> = ({ text, id, onClick }) => {
 interface NavbarButtonProps {
     text: string;
     id: string;
-    onClick?: () => void;
 }
 
-const NavbarButton: React.FC<NavbarButtonProps> = ({ text, id, onClick }) => {
+const NavbarButton: React.FC<NavbarButtonProps> = ({ text, id }) => {
+    // If the button is meant to navigate, wrap it in Link
+    if (id === "cloud") {
+        return (
+            <Link href="/cloud">
+                <button
+                    className="px-6 py-2 text-base max-xl:text-sm font-medium tracking-wide leading-6 cursor-pointer rounded-[48px] max-xl:px-4 max-xl:py-2 bg-transparent border border-[#121211] text-[#121211]"
+                    id={id}
+                >
+                    {text}
+                </button>
+            </Link>
+        );
+    }
+
     return (
         <button
-            className={`px-6 py-2 text-base max-xl:text-sm font-medium tracking-wide leading-6 cursor-pointer rounded-[48px] max-xl:px-4 max-xl:py-2 ${id === "plan" ? "bg-[#0d6aff] text-white hover:bg-[#0d56ff] lg:max-xl:hidden" : "bg-transparent border border-[#121211] text-[#121211]"}`}
+            className={`px-6 py-2 text-base max-xl:text-sm font-medium tracking-wide leading-6 cursor-pointer rounded-[48px] max-xl:px-4 max-xl:py-2 ${id === "plan"
+                ? "bg-[#0d6aff] text-white hover:bg-[#0d56ff] lg:max-xl:hidden"
+                : "bg-transparent border border-[#121211] text-[#121211]"
+                }`}
             id={id}
-            onClick={onClick}
         >
             {text}
         </button>
