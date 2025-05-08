@@ -2,11 +2,21 @@
 import Image from "next/image"
 import { useState } from "react"
 import { PalmTreeIcon } from "../components/icons";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal } from "lucide-react";
 
 
 const photos = () => {
 
-  const [activeTab, setActiveTab] = useState(1);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState("");
+
+  const handleAnimation = (src: string) => {
+    setSelectedImageSrc(src);
+    setShowAnimation(true);
+  };
 
   const images = [
     {
@@ -82,34 +92,70 @@ const photos = () => {
 
   return (
     <div className="flex flex-col px-15.5">
-      <div className="flex gap-4 py-[4vh]">
-        <button onClick={() => setActiveTab(1)} className="px-4 py-2 rounded-lg text-[clamp(1rem,1.5vw,1.5rem)]/5 font-semibold cursor-pointer" style={activeTab === 1 ? { background: "linear-gradient(93deg, #0D6AFF 4.18%, #0956D3 78.6%)", color: "white" } : { background: "transparent", color: "black" }}>Gallery</button>
-        <button onClick={() => setActiveTab(2)} className="px-4 py-2 rounded-lg text-[clamp(1rem,1.5vw,1.5rem)]/5 font-semibold cursor-pointer" style={activeTab === 2 ? { background: "linear-gradient(93deg, #0D6AFF 4.18%, #0956D3 78.6%)", color: "white" } : { background: "transparent", color: "black" }}>Album</button>
-        <button onClick={() => setActiveTab(3)} className="px-4 py-2 rounded-lg text-[clamp(1rem,1.5vw,1.5rem)]/5 font-semibold cursor-pointer" style={activeTab === 3 ? { background: "linear-gradient(93deg, #0D6AFF 4.18%, #0956D3 78.6%)", color: "white" } : { background: "transparent", color: "black" }}>Explore</button>
-        
-      </div>
 
-      {
-        activeTab === 1 && (
+      <Tabs defaultValue="gallery">
+        <TabsList className="grid w-fit space-x-4 py-[4vh] grid-cols-3 bg-transparent">
+          {["gallery", "album", "explore"].map((value) => (
+        <TabsTrigger value={value}
+        key={value}
+          className="relative rounded-lg px-4 py-2 text-[clamp(1rem,1.5vw,1.5rem)]/5 font-semibold cursor-pointer data-[state=active]:bg-[linear-gradient(93deg,_#0D6AFF_4.18%,_#0956D3_78.6%)] data-[state=active]:text-white transition-all data-[state=active]:shadow-none"
+        >{value.charAt(0).toUpperCase() + value.slice(1)}</TabsTrigger>
+        
+          ))}
+        </TabsList>
+        <TabsContent value="gallery" className="mt-[5vh]">
           <div className="flex flex-col gap-[2vh] h-[70vh]">
             <h2 className="text-[#06367a] font-medium">All Photos</h2>
-            <div className="flex flex-wrap justify-between gap-6 overflow-y-scroll no-scrollbar">
+            <div className="flex flex-wrap justify-between gap-3 overflow-y-scroll no-scrollbar">
               {
                 images.map((image, index) => (
-                  <div key={index} className="flex w-[17vw] 2xl:w-[18vw] flex-col gap-2">
-                    <span className="text-sm">{image.date}</span>
+                  <div key={index} className="flex w-[17vw] 2xl:w-[18vw] flex-col gap-2 border rounded-lg shadow bg-white">
+                    <div className="relative flex justify-between items-center px-2">
+                      <span className="text-sm">{image.date}</span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0 bg-transparent hover:bg-transparent focus-visible:ring-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+
+                          <DropdownMenuItem>Download</DropdownMenuItem>
+
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>Convert</DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem onClick={() => handleAnimation(image.src)}>DNA</DropdownMenuItem>
+                                <DropdownMenuItem>Graphene</DropdownMenuItem>
+                                <DropdownMenuItem>Brain Signals</DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
+
+                          <DropdownMenuItem>Share</DropdownMenuItem>
+                          <DropdownMenuItem>Delete</DropdownMenuItem>
+
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                     <Image src={image.src} alt={image.alt} width={296} height={300} className="rounded-lg w-full h-[28vh] object-cover" />
                   </div>
 
                 ))
               }
             </div>
+            {showAnimation && 
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] transition-all duration-300">
+                <div className="w-[60vw] h-[62vh] bg-[#101218] flex flex-col items-center justify-center overflow-hidden rounded-md">
+                  {/* Animation goes here */}
+                </div>
+              </div>
+            }
           </div>
-        )
-      }
-
-      {
-        activeTab === 2 && (
+        </TabsContent>
+        <TabsContent value="album" className="mt-[5vh]">
           <div className="flex flex-col gap-[2vh] h-[70vh]">
             <h2 className="text-[#06367a] font-medium">My albums</h2>
             <div className="flex gap-4 ">
@@ -132,11 +178,8 @@ const photos = () => {
               }
             </div>
           </div>
-        )
-      }
-
-      {
-        activeTab === 3 && (
+        </TabsContent>
+        <TabsContent value="explore" className="mt-[5vh]">
           <div className="flex flex-col h-[70vh] overflow-y-scroll no-scrollbar">
             <h2 className="text-[#06367a] font-medium">Places</h2>
             <div className="flex items-center justify-center mt-3 gap-19 w-full py-2" style={{ background: "linear-gradient(90deg, rgba(53,130,223,0) 0%, #a8d0ff 30%, #EBFAFF 50%, #a8d0ff 70%, rgba(53,130,223,0) 100%)" }}>
@@ -188,9 +231,8 @@ const photos = () => {
               </div>
             </div>
           </div>
-        )
-      }
-
+        </TabsContent>
+      </Tabs>
 
     </div>
   )
