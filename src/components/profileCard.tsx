@@ -1,77 +1,49 @@
+import UserProfileHeader from "./userProfileHeader";
 
-const ProfileCard = () => {
+interface ProfileCardProps {
+    name: string | null;
+    email: string | null;
+    profilePic: string | null;
+    onSignOut: () => void;
+}
+
+const ProfileCard: React.FC<ProfileCardProps> = ({ name, email, profilePic, onSignOut }) => {
     return (
-        <article className="overflow-hidden pt-8 flex flex-col gap-6 bg-white rounded-xl border border-solid border-zinc-300 max-w-[440px] shadow-[0px_0px_48px_rgba(0,0,0,0.15)]">
-            <UserProfileHeader
-                profilePic="/images/user.png"
-                name="Aneela Kiran"
-                email="example@email.com"
-            />
+        <article className="overflow-hidden pt-8 flex flex-col gap-6 bg-white rounded-xl border border-zinc-300 max-w-[440px] shadow-[0_0_48px_rgba(0,0,0,0.15)]">
+            <UserProfileHeader profilePic={profilePic || "/images/user.png"} name={name || "User"} email={email || "No email provided"} />
 
-            <section className="flex gap-12 px-6 w-full text-sm text-[#121211]">
-                <button className="flex flex-1 shrink gap-2.5 justify-center items-center px-2.5 py-2 rounded-3xl border border-[#cfcfcf]">
-                    <div>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="16" viewBox="0 0 17 16" fill="none">
-                            <path d="M8.5 10C9.6046 10 10.5 9.1046 10.5 8C10.5 6.8954 9.6046 6 8.5 6C7.3954 6 6.5 6.8954 6.5 8C6.5 9.1046 7.3954 10 8.5 10Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M14.2025 7.08822C13.8115 6.9888 13.4904 6.71075 13.336 6.33803L13.0817 5.724C12.9391 5.37957 13.0007 4.98433 13.2414 4.69966V4.69966C13.5758 4.30414 13.5514 3.71833 13.1851 3.35208L13.1475 3.31445C12.7818 2.94877 12.1964 2.92585 11.8032 3.26183V3.26183C11.5206 3.50336 11.1265 3.56634 10.7827 3.42494L10.1308 3.15683C9.75757 3.00335 9.47795 2.68373 9.37542 2.29344L9.28875 1.96352C9.19121 1.59218 8.85555 1.33331 8.47162 1.33331V1.33331C8.08783 1.33331 7.75226 1.592 7.65459 1.96315L7.5632 2.3104C7.45971 2.70366 7.17953 3.02661 6.80481 3.18457L6.19767 3.4405C5.8545 3.58516 5.45873 3.51966 5.18046 3.27216V3.27216C4.79821 2.93217 4.21716 2.94916 3.85542 3.3109L3.81808 3.34824C3.44776 3.71856 3.41963 4.31174 3.74987 4.7182V4.7182C3.9866 5.00957 4.04735 5.40866 3.90591 5.75642L3.65625 6.37024C3.50474 6.74273 3.18187 7.01851 2.79027 7.1099L2.49469 7.17889C2.10716 7.26933 1.83301 7.61483 1.83301 8.01278V8.01278C1.83301 8.39885 2.09135 8.73717 2.46379 8.83885L2.8109 8.93361C3.20411 9.04096 3.52621 9.323 3.68454 9.69859L3.94037 10.3055C4.08481 10.6481 4.01918 11.0433 3.77174 11.3209V11.3209C3.43192 11.7021 3.44855 12.2822 3.80965 12.6433L3.84782 12.6815C4.21805 13.0517 4.81145 13.0792 5.21734 12.7485V12.7485C5.50967 12.5102 5.91101 12.4495 6.25977 12.593L6.83474 12.8296C7.20981 12.9839 7.48957 13.3068 7.58888 13.7L7.66971 14.02C7.76573 14.4003 8.10776 14.6666 8.49991 14.6666V14.6666C8.89184 14.6666 9.23374 14.4005 9.32996 14.0206L9.41137 13.6992C9.51078 13.3067 9.78972 12.9842 10.1638 12.8293L10.815 12.5596C11.1393 12.4253 11.5613 12.5159 11.828 12.7442V12.7442C12.2353 13.093 12.7999 13.0331 13.179 12.654V12.654C13.5468 12.2862 13.5742 11.6947 13.2379 11.298V11.298C12.9958 11.0124 12.9337 10.6155 13.0769 10.2696L13.3293 9.66007C13.4844 9.28548 13.8062 9.00531 14.1986 8.90322L14.5303 8.81692C14.9048 8.71947 15.1663 8.38131 15.1663 7.99429V7.99429C15.1663 7.60549 14.9026 7.26623 14.5257 7.17042L14.2025 7.08822Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                    <span className="self-stretch text-sm">Manage Account</span>
+            <section className="flex gap-4 px-6 w-full text-sm text-[#121211]">
+                <button
+                    className="flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-3xl border border-[#cfcfcf] hover:bg-gray-100 transition"
+                    aria-label="Manage Account"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="16" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12" y2="16" />
+                    </svg>
+                    <span>Manage Account</span>
                 </button>
-                <button className="flex flex-1 shrink gap-2.5 justify-center items-center px-2.5 py-2 rounded-3xl border border-[#cfcfcf]">
-                    <div>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="16" viewBox="0 0 17 16" fill="none">
-                            <path d="M8.5 8H13.1667M13.1667 8L11.1667 10M13.1667 8L11.1667 6" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M13.1663 4V3.33333C13.1663 2.59695 12.5694 2 11.833 2H5.16634C4.42996 2 3.83301 2.59695 3.83301 3.33333V12.6667C3.83301 13.4031 4.42996 14 5.16634 14H11.833C12.5694 14 13.1663 13.4031 13.1663 12.6667V12" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                    <span className="self-stretch text-sm">Sign out</span>
+
+                <button
+                    onClick={onSignOut}
+                    className="flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-3xl border border-[#cfcfcf] hover:bg-gray-100 transition"
+                    aria-label="Sign out"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="16" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M16 17l5-5-5-5" />
+                        <path d="M21 12H9" />
+                        <path d="M12 19a9 9 0 1 1 0-14" />
+                    </svg>
+                    <span>Sign out</span>
                 </button>
             </section>
 
-            <footer className="flex gap-2 justify-center items-center py-6 w-full text-sm border-t bg-[#efefef] border-[#d5d5d5] text-neutral-900">
-                <div className="size-[21px] flex items-center justify-center rounded-full shadow-[0_0_12px_2px_rgba(0,0,0,0.12)]" style={{background: "linear-gradient(180deg, #0D6AFF 0%, #004AB9 80%, #232CCD 100%)"}}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="16" viewBox="0 0 18 16" fill="none">
-                        <path d="M17.1986 5.73116C16.7309 5.22075 16.0806 4.94835 15.4701 4.64884C15.4556 4.62891 15.5712 4.33924 15.5863 4.28466C15.9759 2.87864 15.3518 1.56852 14.1103 0.872502C13.6503 0.614685 12.7388 0.102453 12.2441 0.0416761C10.6686 -0.15196 9.54007 1.53558 10.3335 2.91985C10.5609 3.3166 10.8565 3.52227 11.2477 3.73499C11.9868 4.13709 12.778 4.48073 13.5132 4.88721C13.5613 4.91383 13.6282 4.94738 13.6715 4.97534C13.6915 4.98822 13.7083 4.97327 13.6978 5.02104L9.24056 7.07872C7.88024 6.44578 6.50096 5.84883 5.14648 5.20386C5.1167 5.18964 4.8308 5.04 4.82448 5.02165C4.85621 5.00925 4.91358 4.99661 4.95528 4.97728C5.75972 4.60399 6.66445 4.19447 7.43961 3.77632C9.54724 2.6393 8.31966 -0.506535 6.01863 0.0698768C5.59684 0.175629 4.42724 0.80431 4.04799 1.06395C2.87499 1.86694 2.44943 3.35744 3.01259 4.6706C2.51349 4.90702 1.97974 5.10747 1.55077 5.46374C0.172344 6.60854 0.148398 8.70415 1.48902 9.89076C1.91823 10.2707 2.48869 10.499 2.99071 10.7674C2.96421 10.9162 2.89565 11.0511 2.85822 11.1977C2.52406 12.5041 3.1057 13.7852 4.24175 14.4673C4.65005 14.7123 5.24105 15.0187 5.67536 15.2162C7.94491 16.2487 9.58809 13.1233 7.39864 11.8458L4.72177 10.4358L4.75568 10.398L9.24068 8.32295L13.7185 10.3951L13.575 10.488C12.7171 10.9865 11.6309 11.4127 10.8294 11.9836C9.23363 13.12 10.2429 15.6854 12.2227 15.3944C12.6933 15.3252 13.808 14.7204 14.2472 14.4543C15.5178 13.6841 16.0437 12.17 15.4702 10.7788C15.8788 10.5293 16.3413 10.3619 16.731 10.0821C18.1618 9.05459 18.3987 7.04043 17.1986 5.73104V5.73116ZM4.81075 1.90912C5.26791 1.63185 5.81005 1.41062 6.2863 1.16119C7.33082 0.911764 7.86165 2.26698 6.89115 2.79537C5.99846 3.28159 4.99551 3.65209 4.09819 4.14074L4.02259 4.15618C3.68321 3.27381 4.01748 2.39011 4.81075 1.90924V1.90912ZM6.87669 12.8414C7.70326 13.2988 7.21437 14.5175 6.30234 14.2598C5.82877 14.0002 5.29137 13.7843 4.83129 13.5073C4.06756 13.0472 3.67312 12.183 4.01116 11.3219L6.87657 12.8415L6.87669 12.8414ZM4.35006 9.33368C4.09479 9.48003 3.85217 9.64826 3.64103 9.85478C3.02487 9.47602 2.27949 9.28165 1.88444 8.63061C1.60511 8.17016 1.54445 7.62571 1.72095 7.1164C2.03249 6.21799 2.90258 5.96856 3.68114 5.59733C3.89799 5.77638 4.12032 5.95154 4.3706 6.0827C5.43396 6.63966 6.62495 7.09197 7.7142 7.61842C7.76623 7.64358 7.83964 7.6685 7.87149 7.71822L4.34993 9.33368H4.35006ZM11.5709 2.62945C10.8073 2.13315 11.3298 0.935224 12.2161 1.18125C12.5122 1.26354 13.2491 1.67902 13.5472 1.84725C14.3919 2.32374 14.8027 3.16417 14.4595 4.11546L11.5709 2.62945ZM12.1746 14.2552C11.2941 14.5021 10.7619 13.3782 11.5426 12.8614C12 12.5589 12.6349 12.2411 13.1284 11.9766C13.5594 11.7457 14.0038 11.5384 14.4326 11.3031C14.4824 11.2985 14.5036 11.4196 14.5157 11.461C14.986 13.0774 13.3044 13.7016 12.1745 14.2552H12.1746ZM16.6251 8.55585C16.2393 9.25941 15.4753 9.46727 14.8198 9.83947C14.6079 9.66273 14.3946 9.48817 14.1514 9.35495L10.5892 7.71834C10.5763 7.70156 10.6499 7.66643 10.6638 7.65938C11.7925 7.08783 13.0717 6.64477 14.1719 6.04101C14.4069 5.91204 14.6089 5.73797 14.821 5.5763C15.2421 5.80993 15.766 5.99737 16.1457 6.28983C16.8445 6.82795 17.0532 7.77486 16.6249 8.55585H16.6251Z" fill="white" />
-                    </svg>
-                </div>
-                <p className="text-[#121211] text-sm">
-                    Secured by Neuron
-                </p>
+            <footer className="flex justify-center items-center py-4 w-full text-sm border-t bg-[#efefef] border-[#d5d5d5] text-neutral-900">
+                <span>© 2025 Paandaaa</span>
             </footer>
         </article>
     );
 };
 
 export default ProfileCard;
-
-interface UserProfileHeaderProps {
-    profilePic: string;
-    name: string;
-    email: string;
-}
-
-const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
-    profilePic,
-    name,
-    email,
-}) => {
-    return (
-        <header className="flex gap-4 items-start px-8 w-full">
-            <img
-                src={profilePic}
-                alt={`${name}'s profile picture`}
-                className="object-contain shrink-0 w-12 aspect-square rounded-full"
-            />
-            <div className="flex flex-col">
-                <h2 className="text-xl font-semibold leading-snug text-black">
-                    {name}
-                </h2>
-                <p className="text-xs font-medium text-center text-[#808080]">
-                    {email}
-                </p>
-            </div>
-        </header>
-    );
-};
-
