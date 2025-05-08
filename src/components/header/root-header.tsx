@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogoSvg } from "../logo_svg";
 import ProfileCard from "../profileCard";
 import RootSignIn from "../signin/root-signin";
@@ -21,13 +21,20 @@ const RootHeader = () => {
     const [showProfileCard, setShowProfileCard] = useState(false);
 
     const handleProfileClick = () => {
-        setShowProfileCard((prev) => !prev);  // toggle
+        setShowProfileCard((prev) => !prev);
     };
 
     const handleSignOut = async () => {
         await signOut();
         setShowProfileCard(false);
     };
+
+    // ✅ Close the sign-in modal when user signs in
+    useEffect(() => {
+        if (isSignedIn && showSignin) {
+            setShowSignin(false);
+        }
+    }, [isSignedIn, showSignin]);
 
     return (
         <header className="w-full min-h-screen">
@@ -82,13 +89,6 @@ const RootHeader = () => {
                         </button>
                     )}
                 </div>
-
-                {/* <ProfileCard
-                            name={userName}
-                            email={userEmail}
-                            profilePic={userImage}
-                            onSignOut={handleSignOut}
-                        /> */}
 
                 {showProfileCard && (
                     <div className="absolute top-16 right-5 w-[440px]">
