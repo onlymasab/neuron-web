@@ -1,22 +1,98 @@
 "use client";
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { PalmTreeIcon } from "../components/icons";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
-
+import convertToDNA from "../components/convertToDNA";
+import convertToBrainSignals from "../components/convertToBrain";
+import convertToGraphene from "../components/convertToGraphene";
+import ConversionModal from "../components/ConversionModal";
 
 const photos = () => {
 
+  const [showConversionModal, setShowConversionModal] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState("");
+  const [animationSrc, setAnimationSrc] = useState("");
+  const [progress, setProgress] = useState(0);
+  const [conversionDone, setConversionDone] = useState(false);
 
-  const handleAnimation = (src: string) => {
+  useEffect(() => {
+    if (!showAnimation) return;
+
+    let start = Date.now();
+    let interval: NodeJS.Timeout;
+
+    // Visual progress (up to 90%)
+    interval = setTimeout(() => {
+      interval = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const percent = Math.min((elapsed / 10000) * 99, 99); // cap at 90%
+      setProgress(Math.round(percent));
+      }, 100);
+    }, 500); // Start after 1 second
+
+    return () => clearInterval(interval);
+  }, [showAnimation]);
+
+
+  const handleConvert = (type: "dna" | "graphene" | "brain", src: string) => {
+    let animationVideo = "";
+
+        switch (type) {
+      case "dna":
+        
+        animationVideo = "/videos/DNA_Animation.mp4";
+        break;
+      case "graphene":
+        
+        animationVideo = "/videos/Graphene_Animation.mp4";
+        break;
+      case "brain":
+        animationVideo = "/videos/Brain_Animation.mp4";
+        break;
+    }
+    setAnimationSrc(animationVideo);
+
     setSelectedImageSrc(src);
+    setShowConversionModal(true);
     setShowAnimation(true);
+    setShowAnimation(true);
+    setProgress(0); // Reset progress
+    setConversionDone(false); // Reset conversion done state
+
+    const animationStart = Date.now(); // ⏱ Start timing
+
+    const finish = () => {
+      setConversionDone(true);
+      
+      const elapsed = Date.now() - animationStart;
+      const remaining = Math.max(0, 10000 - elapsed);
+
+      setTimeout(() => {
+        setProgress(100); // Set progress to 100% after the animation
+        setTimeout(() => {
+          setShowAnimation(false);
+        }, 500); // Delay before closing the modal
+      }, remaining);
+    }
+
+    switch (type) {
+      case "dna":
+        convertToDNA(src, finish);
+        break;
+      case "graphene":
+        convertToGraphene(src, finish);
+        break;
+      case "brain":
+        convertToBrainSignals(src, finish);
+        break;
+    }
   };
+
 
   const images = [
     {
@@ -96,11 +172,11 @@ const photos = () => {
       <Tabs defaultValue="gallery">
         <TabsList className="grid w-fit space-x-4 py-[4vh] grid-cols-3 bg-transparent">
           {["gallery", "album", "explore"].map((value) => (
-        <TabsTrigger value={value}
-        key={value}
-          className="relative rounded-lg px-4 py-2 text-[clamp(1rem,1.5vw,1.5rem)]/5 font-semibold cursor-pointer data-[state=active]:bg-[linear-gradient(93deg,_#0D6AFF_4.18%,_#0956D3_78.6%)] data-[state=active]:text-white transition-all data-[state=active]:shadow-none"
-        >{value.charAt(0).toUpperCase() + value.slice(1)}</TabsTrigger>
-        
+            <TabsTrigger value={value}
+              key={value}
+              className="relative rounded-lg px-4 py-2 text-[clamp(1rem,1.5vw,1.5rem)]/5 font-semibold cursor-pointer data-[state=active]:bg-[linear-gradient(93deg,_#0D6AFF_4.18%,_#0956D3_78.6%)] data-[state=active]:text-white transition-all data-[state=active]:shadow-none"
+            >{value.charAt(0).toUpperCase() + value.slice(1)}</TabsTrigger>
+
           ))}
         </TabsList>
         <TabsContent value="gallery" className="mt-[5vh]">
@@ -114,45 +190,45 @@ const photos = () => {
                       <span className="text-sm">{image.date}</span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0 bg-transparent hover:bg-transparent focus-visible:ring-0">
+                          <Button variant="ghost" className="h-8 w-8 p-0 bg-transparent cursor-pointer hover:bg-transparent focus-visible:ring-0">
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-
                           <DropdownMenuItem>Download</DropdownMenuItem>
-
                           <DropdownMenuSub>
                             <DropdownMenuSubTrigger>Convert</DropdownMenuSubTrigger>
                             <DropdownMenuPortal>
                               <DropdownMenuSubContent>
-                                <DropdownMenuItem onClick={() => handleAnimation(image.src)}>DNA</DropdownMenuItem>
-                                <DropdownMenuItem>Graphene</DropdownMenuItem>
-                                <DropdownMenuItem>Brain Signals</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleConvert("dna", image.src)}>DNA</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleConvert("graphene", image.src)}>Graphene</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleConvert("brain", image.src)}>Brain Signals</DropdownMenuItem>
                               </DropdownMenuSubContent>
                             </DropdownMenuPortal>
                           </DropdownMenuSub>
-
                           <DropdownMenuItem>Share</DropdownMenuItem>
                           <DropdownMenuItem>Delete</DropdownMenuItem>
-
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                     <Image src={image.src} alt={image.alt} width={296} height={300} className="rounded-lg w-full h-[28vh] object-cover" />
                   </div>
-
                 ))
               }
             </div>
-            {showAnimation && 
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] transition-all duration-300">
-                <div className="w-[60vw] h-[62vh] bg-[#101218] flex flex-col items-center justify-center overflow-hidden rounded-md">
-                  {/* Animation goes here */}
-                </div>
-              </div>
-            }
+
+            {showConversionModal && (
+              <ConversionModal
+                videoSrc={animationSrc}
+                progressBar={progress}
+                showAnimation={showAnimation}
+                onClose={() => {
+                  setShowConversionModal(false);
+                }}
+              />
+            )}
+
           </div>
         </TabsContent>
         <TabsContent value="album" className="mt-[5vh]">
