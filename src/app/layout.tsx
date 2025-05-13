@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
 import localFont from "next/font/local";
+import type { Metadata } from "next";
+
 import "./globals.css";
 
 const segoeUI = localFont({
-  src: './fonts/segoeUI-VF.ttf',
+  src: './fonts/SegoeUI-VF.woff2',
   display: 'swap',
-  variable: '--font-segoeUi',
+  variable: '--font-segoe'
 });
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${segoeUI.variable}`}>
+      <body className={`${segoeUI.variable} antialiased`}>
         {children}
       </body>
     </html>

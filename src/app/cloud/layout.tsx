@@ -24,31 +24,23 @@ export default function CloudLayout({
     header?: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
-            <body
-                className={`${segoeUI.variable} antialiased`}
-            >
-                <div className="grid grid-cols-12 grid-rows-12 h-screen bg-[#ebf2fd]">
+        <div className="grid grid-cols-12 grid-rows-12 h-screen bg-[#ebf2fd]">
 
-                    <div className="col-span-12">
-                        {/* Header Slot */}
-                        {header}
+            <div className="col-span-12">
+                {/* Header Slot */}
+                {header}
+            </div>
 
-                    </div>
+            <div className="col-span-2 row-span-11 row-start-2 border-r border-r-[#b1c2e8]">
+                {/* Sidebar Slot */}
+                {sidebar}
+            </div>
 
-                    <div className="col-span-2 row-span-11 row-start-2 border-r border-r-[#b1c2e8]">
-                        {/* Sidebar Slot */}
-                        {sidebar}
-                    </div>
+            <div className="col-span-10 row-span-11 col-start-3 row-start-2 overflow-y-auto">
+                {/* Content */}
+                {children}
+            </div>
 
-                    <div className="col-span-10 row-span-11 col-start-3 row-start-2 overflow-y-auto">
-                        {/* Content */}
-                        {children}
-                    </div>
-
-                </div>
-
-            </body>
-        </html>
+        </div>
     );
 }
