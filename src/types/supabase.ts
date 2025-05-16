@@ -1,3 +1,4 @@
+import { DriveItem } from '@/stores/useDriveStore';
 import { Database as GeneratedDatabase } from './database.types';
 
 export type Database = GeneratedDatabase;
@@ -11,3 +12,5 @@ export type UserModel = {
   avatar: string;
   role: ValidRole;
 };
+
+
