@@ -1,164 +1,129 @@
-import { create } from 'zustand';
-import { supabase } from '@/lib/supabase/client';
-import { User } from '@supabase/supabase-js';
+'use client';
 
-type UserMetadata = {
-  full_name?: string;
-  picture?: string;
-};
+import { create } from 'zustand';
+import { createClient } from '@/lib/supabase/client';
+import type { UserModel, ValidRole } from '@/types/supabase';
 
 type AuthState = {
-  isSignedIn: boolean;
-  isUserRegistered: boolean;
-  isUserVerified: boolean;
-  showCreateUserModal: boolean;
-  showOtpModal: boolean;
-  userName: string | null;
-  userImage: string | null;
-  userEmail: string | null;
-
-  // Actions
-  setIsSignedIn: (value: boolean) => void;
-  setIsUserRegistered: (value: boolean) => void;
-  setIsUserVerified: (value: boolean) => void;
-  setShowCreateUserModal: (value: boolean) => void;
-  setShowOtpModal: (value: boolean) => void;
-  setUserData: (name: string | null, image: string | null, email: string | null) => void;
-  setUser: (user: User | null) => void;
-
-  checkSession: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  user: UserModel | null;
+  isLoading: boolean;
+  logoUrl: string;
+  setUser: (user: UserModel | null) => void;
+  setLogoUrl: (url: string) => void;
   signOut: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 };
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  isSignedIn: false,
-  isUserRegistered: false,
-  isUserVerified: false,
-  showCreateUserModal: false,
-  showOtpModal: false,
-  userName: null,
-  userImage: null,
-  userEmail: null,
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isLoading: true,
+  logoUrl: '',
+  setUser: (user) => set({ user, isLoading: false }),
+  setLogoUrl: (url) => set({ logoUrl: url }),
 
-  setIsSignedIn: (value) => set({ isSignedIn: value }),
-  setIsUserRegistered: (value) => set({ isUserRegistered: value }),
-  setIsUserVerified: (value) => set({ isUserVerified: value }),
-  setShowCreateUserModal: (value) => set({ showCreateUserModal: value }),
-  setShowOtpModal: (value) => set({ showOtpModal: value }),
-
-  setUserData: (name, image, email) =>
-    set({
-      userName: name,
-      userImage: image,
-      userEmail: email,
-    }),
-
-  setUser: (user) => {
-    if (user) {
-      const metadata = user.user_metadata as UserMetadata;
-      set({
-        isSignedIn: true,
-        userName: metadata?.full_name || 'User',
-        userImage: metadata?.picture || '/images/user.png',
-        userEmail: user.email || 'No email provided',
-      });
-    } else {
-      set({
-        isSignedIn: false,
-        userName: null,
-        userImage: null,
-        userEmail: null,
-      });
-    }
+  signOut: async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    set({ user: null, isLoading: false, logoUrl: '' });
   },
 
-  checkSession: async () => {
-    const { isSignedIn } = get();
-    if (isSignedIn) return;
+  checkAuth: async () => {
+    set({ isLoading: true });
+    const supabase = createClient();
 
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+    console.log('[AuthStore] Running checkAuth...');
 
-      if (error || !session) {
-        set({
-          isSignedIn: false,
-          isUserRegistered: false,
-          isUserVerified: false,
-          userName: null,
-          userImage: null,
-          userEmail: null,
-        });
+    const { data: sessionData, error: sessionError } = await supabase.auth.getUser();
+    console.log('[AuthStore] Session data:', sessionData, 'Session error:', sessionError);
+
+    if (sessionError || !sessionData.user) {
+      console.error('[AuthStore] No user found or error:', sessionError?.message);
+      set({ user: null, isLoading: false, logoUrl: '' });
+      return;
+    }
+
+    const userId = sessionData.user.id;
+
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select(`
+        full_name,
+        email,
+        avatar_url,
+        roles (
+          role_name
+        )
+      `)
+      .eq('id', userId)
+      .single();
+
+    console.log('[AuthStore] Profile data:', profileData, 'Profile error:', profileError);
+
+    if (profileError) {
+      console.error('[AuthStore] Profile fetch error:', profileError.message);
+      set({ user: null, isLoading: false, logoUrl: '' });
+      return;
+    }
+
+    const userModel: UserModel = {
+      id: userId,
+      name: profileData.full_name || sessionData.user.user_metadata?.full_name || 'Unknown',
+      email: profileData.email || sessionData.user.email || '',
+      avatar: profileData.avatar_url || sessionData.user.user_metadata?.avatar_url || '',
+      role: (profileData.roles?.[0]?.role_name || 'user') as ValidRole,
+    };
+
+    console.log('[AuthStore] Setting user model:', userModel);
+
+    set({
+      user: userModel,
+      isLoading: false,
+      logoUrl: userModel.avatar,
+    });
+
+    // Optional: listen for auth state changes
+    supabase.auth.onAuthStateChange(async (_, session) => {
+      console.log('[AuthStore] Auth state changed:', session);
+
+      if (!session?.user) {
+        set({ user: null, isLoading: false, logoUrl: '' });
         return;
       }
 
-      const user = session.user;
-      const metadata = user.user_metadata as UserMetadata;
-
-      set({
-        isSignedIn: true,
-        userName: metadata?.full_name || 'User',
-        userImage: metadata?.picture || '/images/user.png',
-        userEmail: user.email || 'No email provided',
-      });
-
-      const { data, error: userError } = await supabase
-        .from('users')
-        .select('id, is_verified')
-        .eq('id', user.id)
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          full_name,
+          email,
+          avatar_url,
+          roles (
+            role_name
+          )
+        `)
+        .eq('id', session.user.id)
         .single();
 
-      if (userError || !data) {
-        set({ isUserRegistered: false, showCreateUserModal: true });
-      } else {
-        set({
-          isUserRegistered: true,
-          isUserVerified: data.is_verified,
-          showOtpModal: !data.is_verified,
-        });
+      if (error) {
+        console.error('[AuthStore] Realtime profile fetch error:', error.message);
+        set({ user: null, isLoading: false, logoUrl: '' });
+        return;
       }
-    } catch (err) {
-      console.error('checkSession error:', err);
-      set({
-        isSignedIn: false,
-        isUserRegistered: false,
-        isUserVerified: false,
-      });
-    }
-  },
 
-  signInWithGoogle: async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-      });
+      const updatedUser: UserModel = {
+        id: session.user.id,
+        name: data.full_name || session.user.user_metadata?.full_name || 'Unknown',
+        email: data.email || session.user.email || '',
+        avatar: data.avatar_url || session.user.user_metadata?.avatar_url || '',
+        role: (data.roles?.[0]?.role_name || 'user') as ValidRole,
+      };
 
-      if (error) throw error;
-
-      // After OAuth, check session and user state
-      await get().checkSession();
-    } catch (err) {
-      console.error('Google sign-in error:', err);
-    }
-  },
-
-  signOut: async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      console.log('[AuthStore] Updating user on auth change:', updatedUser);
 
       set({
-        isSignedIn: false,
-        isUserRegistered: false,
-        isUserVerified: false,
-        showCreateUserModal: false,
-        showOtpModal: false,
-        userName: null,
-        userImage: null,
-        userEmail: null,
+        user: updatedUser,
+        isLoading: false,
+        logoUrl: updatedUser.avatar,
       });
-    } catch (err) {
-      console.error('Sign out error:', err);
-    }
+    });
   },
 }));

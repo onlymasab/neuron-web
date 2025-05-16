@@ -2,11 +2,12 @@ import localFont from "next/font/local";
 import type { Metadata } from "next";
 
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
 
 const segoeUI = localFont({
-  src: './fonts/SegoeUI-VF.woff2',
-  display: 'swap',
-  variable: '--font-segoe'
+  src: "./fonts/SegoeUI-VF.woff2",
+  display: "swap",
+  variable: "--font-segoe",
 });
 
 export const metadata: Metadata = {
@@ -22,7 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${segoeUI.variable} antialiased`}>
-        {children}
+        {/* AuthProvider handles auth state management */}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+       
       </body>
     </html>
   );

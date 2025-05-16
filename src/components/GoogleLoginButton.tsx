@@ -2,8 +2,10 @@
 
 import { useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { supabase } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useRouter } from 'next/navigation';
+import { ValidRole } from '@/types/UserModel';
 
 declare const google: any;
 
@@ -12,6 +14,9 @@ interface Props {
 }
 
 export default function GoogleLoginButton({ onUserNotFound }: Props) {
+  const router = useRouter();
+  const supabase = createClient();
+
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
       console.error('Google Client ID is not set in environment variables');
@@ -34,7 +39,6 @@ export default function GoogleLoginButton({ onUserNotFound }: Props) {
       });
     };
 
-    // Load the Google Sign-In script only once
     if (!document.getElementById('google-gsi-script')) {
       const script = document.createElement('script');
       script.src = 'https://accounts.google.com/gsi/client';
@@ -45,7 +49,9 @@ export default function GoogleLoginButton({ onUserNotFound }: Props) {
       document.body.appendChild(script);
 
       return () => {
-        document.body.removeChild(script); // Cleanup script after component unmounts
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
       };
     } else {
       initializeGoogleSignIn();
@@ -54,26 +60,57 @@ export default function GoogleLoginButton({ onUserNotFound }: Props) {
 
   const handleCredentialResponse = async (response: { credential: string }) => {
     try {
-      const decoded = jwtDecode<{ email: string; name: string }>(response.credential);
+      // Decode token to get user info (optional)
+      const decoded = jwtDecode<{ email: string; name: string; picture: string }>(response.credential);
       console.log('Decoded Google token:', decoded);
 
-      // Sign in user with the received token from Google
-      const { error } = await supabase.auth.signInWithIdToken({
+      // Sign in or sign up user with Supabase
+      const { error: authError } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: response.credential,
       });
 
-      if (error) {
-        console.error('Supabase auth error:', error.message);
-        if (error.status === 404 || error.message.includes('User not found')) {
-          onUserNotFound(); // Call the callback if the user is not found
+      if (authError) {
+        console.error('Supabase auth error:', authError.message);
+        if (authError.status === 404 || authError.message.includes('User not found')) {
+          onUserNotFound();
         }
-      } else {
-        // User signed in successfully, set user data in state
-        const { data } = await supabase.auth.getUser();
-        useAuthStore.getState().setUser(data?.user ?? null);
-        console.log('User authenticated successfully');
+        return;
       }
+
+      // Get current authenticated user
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (!userData?.user || userError) {
+        console.error('Error getting user:', userError?.message);
+        return;
+      }
+      const userId = userData.user.id;
+
+      // Fetch profile joined with roles to get role_name
+      const { data: profileData, error: fetchError } = await supabase
+        .from('profiles')
+        .select('full_name, email, avatar_url, roles!inner(role_name)')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError || !profileData) {
+        console.error('Error fetching profile:', fetchError?.message);
+        return;
+      }
+
+      // Build user model for your app
+      const userModel = {
+        id: userId,
+        name: profileData.full_name || decoded.name || 'Unknown',
+        email: profileData.email || decoded.email || '',
+        avatar: profileData.avatar_url || decoded.picture || '',
+        role: ((profileData.roles as { role_name: string }[])?.[0]?.role_name || 'admin') as ValidRole,
+      };
+
+      // Update Zustand auth store
+      useAuthStore.getState().setUser(userModel);
+      useAuthStore.getState().setLogoUrl(userModel.avatar || '');
+
     } catch (err) {
       console.error('Error processing Google sign-in:', err);
     }

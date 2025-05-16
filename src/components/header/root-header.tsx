@@ -8,14 +8,7 @@ import RootSignIn from "../signin/root-signin";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 const RootHeader = () => {
-    const {
-        isSignedIn,
-        userName,
-        userImage,
-        userEmail,
-        signInWithGoogle,
-        signOut,
-    } = useAuthStore();
+    const { user, isLoading, signOut, setUser, checkAuth } = useAuthStore();
 
     const [showSignin, setShowSignin] = useState(false);
     const [showProfileCard, setShowProfileCard] = useState(false);
@@ -31,10 +24,12 @@ const RootHeader = () => {
 
     // ✅ Close the sign-in modal when user signs in
     useEffect(() => {
-        if (isSignedIn && showSignin) {
+        if (user && showSignin) {
             setShowSignin(false);
         }
-    }, [isSignedIn, showSignin]);
+    }, [user, showSignin]);
+
+
 
     return (
         <header className="w-full min-h-screen">
@@ -44,14 +39,14 @@ const RootHeader = () => {
                         <LogoSvg />
                     </div>
 
-                    {isSignedIn ? (
+                    {user ? (
                         <button
                             onClick={handleProfileClick}
                             className="flex items-center gap-2"
                         >
-                            <p className="text-sm font-medium">{userName}</p>
+                            <p className="text-sm font-medium">{user.name}</p>
                             <img
-                                src={userImage || "/images/user.png"}
+                                src={user.avatar || "/images/user.png"}
                                 alt="profile picture"
                                 className="object-contain shrink-0 w-9 aspect-square rounded-full"
                             />
@@ -93,14 +88,13 @@ const RootHeader = () => {
                 {showProfileCard && (
                     <div className="absolute top-16 right-5 w-[440px]">
                         <ProfileCard
-                            name={userName}
-                            email={userEmail}
-                            profilePic={userImage}
+                            name={user?.name!}
+                            email={user?.email!}
+                            profilePic={user?.avatar!}
                             onSignOut={handleSignOut}
                         />
                     </div>
                 )}
-
                 <div className="flex flex-col gap-12 max-w-7xl w-[80vw] mt-[10vh] mx-auto px-8">
                     <h1 className="text-[clamp(2rem,4vw,4rem)] font-bold text-[#121211] text-center">
                         AI-Powered Cloud Storage Reinvented with DNA, Graphene & Brain Signals
