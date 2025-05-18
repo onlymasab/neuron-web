@@ -10,6 +10,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 const RootHeader = () => {
     const { user, isLoading, signOut, setUser, checkAuth } = useAuthStore();
 
+   
+
     const [showSignin, setShowSignin] = useState(false);
     const [showProfileCard, setShowProfileCard] = useState(false);
 

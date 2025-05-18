@@ -1,10 +1,12 @@
+// components/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { JSX } from "react/jsx-runtime";
+import { toast } from "sonner";
 
 import {
   FileIcon,
@@ -15,8 +17,9 @@ import {
   TrashIcon,
 } from "../components/icons";
 import { Plus } from "lucide-react";
+
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useDriveStore } from "@/stores/useDriveStore";
+import { useCloudStore } from "@/stores/useCloudStore";
 
 import {
   DropdownMenu,
@@ -25,9 +28,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import {
   Dialog,
   DialogContent,
@@ -36,10 +39,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-// Optional: import toast if you want to show success messages
-// import { toast } from "sonner";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -58,24 +60,24 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-[#ebf2fd] pt-[1vh] pb-[5vh] justify-between">
+    <div className="flex flex-col h-full bg-[#ebf2fd] pt-4 pb-6 justify-between">
       <div>
-        <div className="px-8 py-5">
+        <div className="px-6 py-4">
           <CreateMenu />
         </div>
 
-        <span className="px-4 pb-8 mb-4 2xl:py-8 text-md font-semibold">
+        <span className="px-6 pb-4 mb-3 text-md font-semibold text-gray-800">
           {user?.name || "User"}
         </span>
 
-        <div>
+        <nav>
           {navigation.map((item) => (
             <SidebarLink key={item.name} item={item} pathname={pathname} />
           ))}
-        </div>
+        </nav>
 
         <div>
-          <h3 className="py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <h3 className="pt-6 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Browse files by
           </h3>
           {browseFilesBy.map((item) => (
@@ -84,7 +86,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <Link href="/cloud/storage" className="flex flex-col px-4 gap-2">
+      <Link href="/cloud/storage" className="flex flex-col px-6 gap-2">
         <span className="text-sm font-semibold">Storage</span>
         <StorageIndicator />
       </Link>
@@ -92,21 +94,22 @@ export default function Sidebar() {
   );
 }
 
-interface SidebarItem {
-  name: string;
-  href: string;
-  icon: JSX.Element;
-}
-
-const SidebarLink = ({ item, pathname }: { item: SidebarItem; pathname: string }) => {
+const SidebarLink = ({
+  item,
+  pathname,
+}: {
+  item: SidebarItem;
+  pathname: string;
+}) => {
   const isActive = pathname === item.href;
+
   return (
     <Link
       href={item.href}
-      className={`flex items-center h-[6vh] gap-4 text-sm transition ease-in-out duration-150 ${
+      className={`flex items-center h-[6vh] gap-4 text-sm font-medium transition ${
         isActive
-          ? "pl-3 border-l-[5px] border-l-[#0D6AFF] bg-[#f5f9fc]"
-          : "pl-4"
+          ? "pl-3 border-l-4 border-blue-600 bg-[#f5f9fc] text-blue-600"
+          : "pl-6 text-gray-700 hover:bg-[#f0f5fc]"
       }`}
     >
       {item.icon}
@@ -115,6 +118,12 @@ const SidebarLink = ({ item, pathname }: { item: SidebarItem; pathname: string }
   );
 };
 
+interface SidebarItem {
+  name: string;
+  href: string;
+  icon: JSX.Element;
+}
+
 const StorageIndicator = () => {
   const usedStorage = 2.2;
   const totalStorage = 5;
@@ -122,13 +131,13 @@ const StorageIndicator = () => {
 
   return (
     <div>
-      <div className="w-full bg-[#e8e8e8] rounded-full h-2.5">
+      <div className="w-full bg-[#e0e0e0] rounded-full h-2.5">
         <div
-          className="h-2.5 bg-[#0d6aff] rounded-full"
+          className="h-2.5 bg-blue-600 rounded-full"
           style={{ width: `${usedPercentage}%` }}
         />
       </div>
-      <p className="text-[#777] text-[11px]/5 mt-1">
+      <p className="text-gray-500 text-xs mt-1">
         {usedStorage} GB used of {totalStorage} GB ({usedPercentage}%)
       </p>
     </div>
@@ -138,31 +147,103 @@ const StorageIndicator = () => {
 export function CreateMenu() {
   const [open, setOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
-  const createFolder = useDriveStore((state) => state.createFolder);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { createFolder, uploadFile, uploading } = useCloudStore();
+  const { user } = useAuthStore();
 
-  const handleCreate = async () => {
-    if (!folderName.trim()) return;
+  console.log('Authenticated user:', user);
 
-    await createFolder(folderName);
-    // toast.success(`Folder "${folderName}" created`);
-    setFolderName("");
-    setOpen(false);
+  const handleCreateFolder = async () => {
+    if (!folderName.trim()) {
+      toast.error("Folder name cannot be empty.");
+      return;
+    }
+
+    if (/[<>:"/\\|?*]/.test(folderName)) {
+      toast.error("Folder name contains invalid characters.");
+      return;
+    }
+
+    const toastId = toast.loading("Creating folder...");
+
+    try {
+      await createFolder(folderName);
+      toast.success(`Folder created: ${folderName}`, { id: toastId });
+      setFolderName("");
+      setOpen(false);
+    } catch (error: any) {
+      toast.error(`Failed to create folder: ${error.message || 'Unknown error'}`, { id: toastId });
+    }
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const allowedTypes = [
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "video/mp4",
+      "audio/mpeg",
+      "audio/mp3",
+    ];
+
+    for (const file of Array.from(files)) {
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`Unsupported file: ${file.name}`);
+        continue;
+      }
+
+      const fileId = `${file.name}-${Date.now()}`; // Unique ID for progress tracking
+      const toastId = toast.loading(
+        <div>
+          <span>Uploading {file.name}...</span>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+            <div
+              className="bg-blue-600 h-2.5 rounded-full"
+              style={{ width: `${uploadProgress[fileId] || 0}%` }}
+            />
+          </div>
+          <span>{Math.round(uploadProgress[fileId] || 0)}%</span>
+        </div>,
+        { duration: Infinity }
+      );
+
+      try {
+        await uploadFile(file, undefined, (progress) => {
+          setUploadProgress((prev) => ({ ...prev, [fileId]: progress }));
+        });
+        toast.success(`Uploaded: ${file.name}`, { id: toastId });
+      } catch (error: any) {
+        toast.error(`Failed to upload ${file.name}: ${error.message || 'Unknown error'}`, { id: toastId });
+      } finally {
+        setUploadProgress((prev) => {
+          const newProgress = { ...prev };
+          delete newProgress[fileId];
+          return newProgress;
+        });
+      }
+    }
+
+    e.target.value = "";
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            aria-label="Create or Upload"
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-medium"
+          <Button
+            className="w-full text-white font-medium rounded-full text-sm flex items-center justify-center gap-2"
             style={{
               background: "linear-gradient(93deg, #0D6AFF 4.18%, #0956D3 78.6%)",
             }}
+            disabled={uploading || !user}
           >
-            <Plus size={16} strokeWidth={2} />
+            <Plus size={16} />
             Create or Upload
-          </button>
+          </Button>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent className="w-56">
@@ -172,31 +253,39 @@ export function CreateMenu() {
             <DialogTrigger asChild>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                 <Image
-                  src={"/images/icons/folder.png"}
+                  src="/images/icons/folder.png"
                   width={20}
                   height={20}
                   alt="folder"
                   className="mr-2"
                 />
-                Folder
-                <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+                New Folder
               </DropdownMenuItem>
             </DialogTrigger>
 
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              File Upload
-              <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
+            <input
+              type="file"
+              ref={fileInputRef}
+              multiple
+              accept=".pdf,.png,.jpg,.jpeg,.mp4,.mp3"
+              onChange={handleUpload}
+              className="hidden"
+            />
+
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }}
+            >
+              Upload File
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              Folder Upload
-              <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-            </DropdownMenuItem>
+
+            <DropdownMenuItem disabled>Upload Folder</DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Folder creation dialog */}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Folder</DialogTitle>
@@ -207,16 +296,27 @@ export function CreateMenu() {
           value={folderName}
           onChange={(e) => setFolderName(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && folderName.trim() && !uploading) {
               e.preventDefault();
-              handleCreate();
+              handleCreateFolder();
             }
           }}
+          disabled={uploading || !user}
         />
 
         <DialogFooter>
-          <Button onClick={handleCreate} disabled={!folderName.trim()}>
-            Create
+          <Button
+            onClick={() => setOpen(false)}
+            variant="outline"
+            disabled={uploading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateFolder}
+            disabled={!folderName.trim() || uploading || !user}
+          >
+            {uploading ? "Creating..." : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>

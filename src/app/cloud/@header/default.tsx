@@ -66,7 +66,7 @@ const Header = () => {
                 <div className="relative ml-1">
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
                     <button aria-label="Profile" className="hover:scale-105 transition rounded-full p-1.5">
-                        <Image src={user?.avatar!} alt="User Avatar" width={32} height={32} className="rounded-full" />
+                        <Image src={user?.avatar || ""} alt="User Avatar" width={32} height={32} className="rounded-full" />
                     </button>
                 </div>
             </div>

@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { createClient } from '@/lib/supabase/client';
-import type { UserModel, ValidRole } from '@/types/supabase';
+import type { UserModel, ValidRole } from '@/types/UserModel';
 
 type AuthState = {
   user: UserModel | null;
@@ -13,6 +13,7 @@ type AuthState = {
   signOut: () => Promise<void>;
   checkAuth: () => Promise<void>;
 };
+
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -31,18 +32,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true });
     const supabase = createClient();
 
-    console.log('[AuthStore] Running checkAuth...');
+    console.log('[AuthStore] 🔍 Checking user auth...');
 
     const { data: sessionData, error: sessionError } = await supabase.auth.getUser();
-    console.log('[AuthStore] Session data:', sessionData, 'Session error:', sessionError);
 
-    if (sessionError || !sessionData.user) {
-      console.error('[AuthStore] No user found or error:', sessionError?.message);
+    if (sessionError || !sessionData?.user) {
+      console.warn('[AuthStore] ❌ No user session:', sessionError?.message);
       set({ user: null, isLoading: false, logoUrl: '' });
       return;
     }
 
+   
+
     const userId = sessionData.user.id;
+
+
 
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
@@ -50,30 +54,28 @@ export const useAuthStore = create<AuthState>((set) => ({
         full_name,
         email,
         avatar_url,
-        roles (
-          role_name
-        )
+        role:role_id(role_name)
       `)
       .eq('id', userId)
       .single();
 
-    console.log('[AuthStore] Profile data:', profileData, 'Profile error:', profileError);
-
-    if (profileError) {
-      console.error('[AuthStore] Profile fetch error:', profileError.message);
+    if (profileError || !profileData) {
+      console.warn('[AuthStore] ❌ Profile fetch failed:', profileError?.message);
       set({ user: null, isLoading: false, logoUrl: '' });
       return;
     }
+
+
 
     const userModel: UserModel = {
       id: userId,
       name: profileData.full_name || sessionData.user.user_metadata?.full_name || 'Unknown',
       email: profileData.email || sessionData.user.email || '',
       avatar: profileData.avatar_url || sessionData.user.user_metadata?.avatar_url || '',
-      role: (profileData.roles?.[0]?.role_name || 'user') as ValidRole,
+      role: profileData.role.role_name as ValidRole,
     };
+    
 
-    console.log('[AuthStore] Setting user model:', userModel);
 
     set({
       user: userModel,
@@ -81,46 +83,43 @@ export const useAuthStore = create<AuthState>((set) => ({
       logoUrl: userModel.avatar,
     });
 
-    // Optional: listen for auth state changes
+    // 🔄 Realtime auth state listener
     supabase.auth.onAuthStateChange(async (_, session) => {
-      console.log('[AuthStore] Auth state changed:', session);
-
       if (!session?.user) {
+        console.log('[AuthStore] 👋 User signed out');
         set({ user: null, isLoading: false, logoUrl: '' });
         return;
       }
 
-      const { data, error } = await supabase
+      const { data: updatedProfile, error } = await supabase
         .from('profiles')
         .select(`
           full_name,
           email,
           avatar_url,
-          roles (
-            role_name
-          )
+          role:role_id(role_name)
         `)
         .eq('id', session.user.id)
         .single();
 
-      if (error) {
-        console.error('[AuthStore] Realtime profile fetch error:', error.message);
+      if (error || !updatedProfile) {
+        console.warn('[AuthStore] ❌ Realtime profile fetch failed:', error?.message);
         set({ user: null, isLoading: false, logoUrl: '' });
         return;
       }
 
-      const updatedUser: UserModel = {
+
+      const updatedUser : UserModel = {
         id: session.user.id,
-        name: data.full_name || session.user.user_metadata?.full_name || 'Unknown',
-        email: data.email || session.user.email || '',
-        avatar: data.avatar_url || session.user.user_metadata?.avatar_url || '',
-        role: (data.roles?.[0]?.role_name || 'user') as ValidRole,
+        name: updatedProfile.full_name || session.user.user_metadata?.full_name || 'Unknown',
+        email: updatedProfile.email || session.user.email || '',
+        avatar: updatedProfile.avatar_url || session.user.user_metadata?.avatar_url || '',
+        role: updatedProfile.role.role_name,
       };
 
-      console.log('[AuthStore] Updating user on auth change:', updatedUser);
 
       set({
-        user: updatedUser,
+        // user: updatedUser,
         isLoading: false,
         logoUrl: updatedUser.avatar,
       });

@@ -1,3 +1,4 @@
+"use client"
 import RootDownload2 from "@/components/download-2/root-download2";
 import RootDownload from "@/components/download/root-download";
 import RootExplore from "@/components/explore/root-explore";
@@ -10,9 +11,13 @@ import Overview from "@/components/overview/root-overview";
 import RootPricing from "@/components/pricing/root-pricing";
 import RootResources from "@/components/resources/root-resources";
 import RootTeam from "@/components/team/root-team";
+import React from "react";
 
 
-export default function Home() {
+export default  function Home()  {
+
+  
+
   return (
     <>
       <RootHeader />

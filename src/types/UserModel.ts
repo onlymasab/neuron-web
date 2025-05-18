@@ -5,5 +5,7 @@ export type UserModel = {
   name: string;
   email: string;
   avatar: string;
-  role: ValidRole;
+  role: {
+   role_name: ValidRole
+  };
 };

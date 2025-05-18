@@ -1,54 +1,326 @@
+// app/files.tsx
 "use client";
-import { useState } from "react"
-import RecentFiles from "../components/recentFiles"
-import { ChevronIcon } from "../components/icons"
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getSortedRowModel,
+} from "@tanstack/react-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
 
-const files = () => {
-  const [data, setData] = useState([])
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useCloudStore } from "@/stores/useCloudStore";
+import { CloudModel } from "@/types/CloudModel";
+
+export default function Files() {
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const { files, fetchFiles, updateFile, deleteFile } = useCloudStore();
+  const [editFileId, setEditFileId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [rowSelection, setRowSelection] = useState({});
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchFiles(user.id).catch((error) =>
+        toast.error(`Failed to fetch files: ${error.message}`)
+      );
+    }
+  }, [user, fetchFiles]);
+
+  const columns: ColumnDef<CloudModel>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+    },
+    {
+      accessorKey: "name",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Name
+          {column.getIsSorted() === "asc" ? (
+            <ChevronUp className="ml-2 h-4 w-4" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ChevronDown className="ml-2 h-4 w-4" />
+          ) : null}
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          {row.original.is_folder ? "📁" : "📄"}
+          {row.getValue("name")}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "updated_at",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Modified
+          {column.getIsSorted() === "asc" ? (
+            <ChevronUp className="ml-2 h-4 w-4" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ChevronDown className="ml-2 h-4 w-4" />
+          ) : null}
+        </Button>
+      ),
+      cell: ({ row }) =>
+        new Date(row.getValue("updated_at")).toLocaleDateString(),
+    },
+    {
+      accessorKey: "size",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          File Size
+          {column.getIsSorted() === "asc" ? (
+            <ChevronUp className="ml-2 h-4 w-4" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ChevronDown className="ml-2 h-4 w-4" />
+          ) : null}
+        </Button>
+      ),
+      cell: ({ row }) =>
+        row.original.is_folder
+          ? "-"
+          : `${((row.getValue("size") as number) / 1024 / 1024).toFixed(2)} MB`,
+    },
+    {
+      accessorKey: "is_shared",
+      header: "Sharing",
+      cell: ({ row }) =>
+        row.getValue("is_shared") ? "Shared" : "Private",
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const file = row.original;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setEditFileId(file.id);
+                  setEditName(file.name);
+                }}
+              >
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={async () => {
+                  try {
+                    await deleteFile(file.id);
+                    toast.success(`${file.name} moved to trash`);
+                  } catch (error: any) {
+                    toast.error(`Failed to delete ${file.name}: ${error.message}`);
+                  }
+                }}
+              >
+                Delete
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (file.is_folder) {
+                    router.push(`/cloud/files?folder=${file.id}`);
+                  } else {
+                    window.open(file.file_url, "_blank");
+                  }
+                }}
+              >
+                View
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
+  const table = useReactTable({
+    data: files,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    onRowSelectionChange: setRowSelection,
+    state: {
+      rowSelection,
+    },
+  });
+
+  const handleEdit = async () => {
+    if (!editName.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    if (/[<>:"/\\|?*]/.test(editName)) {
+      toast.error("Name contains invalid characters");
+      return;
+    }
+    try {
+      await updateFile(editFileId!, { name: editName });
+      toast.success(`Renamed to ${editName}`);
+      setEditFileId(null);
+      setEditName("");
+    } catch (error: any) {
+      toast.error(`Failed to rename: ${error.message}`);
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-6 w-full text-4xl h-full px-15.5">
-      <h2 className="text-2xl font-medium py-[4vh]">My Files</h2>
-      {
-        !data.length ? (
-          <div className="flex gap-4 justify-between items-center py-[clamp(1vh,1.5vh,2vh)] max-2xl:pl-8 px-6 bg-white rounded-xl">
-            <button disabled className="pr-8">
-              <svg width="16px" height="16px" strokeWidth="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="#000000"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#000000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+    <div className="flex flex-col gap-6 w-full h-full px-6 py-4">
+      <h2 className="text-2xl font-medium">My Files</h2>
+      {files.length === 0 ? (
+        <div className="flex items-center justify-center h-[70vh]">
+          <p className="text-gray-500">No files or folders found.</p>
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
-            </button>
-            <div className="flex flex-1 gap-6 items-center">
-              <div className="max-2xl:size-4.5 size-6">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-full h-full" viewBox="0 0 24 24" fill="none">
-                  <path d="M6 2C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V9.82777C20 9.29733 19.7893 8.78863 19.4142 8.41355L13.5864 2.58579C13.2114 2.21071 12.7027 2 12.1722 2H6ZM5.5 4C5.5 3.72386 5.72386 3.5 6 3.5H12V8C12 9.10457 12.8954 10 14 10H18.5V20C18.5 20.2761 18.2761 20.5 18 20.5H6C5.72386 20.5 5.5 20.2761 5.5 20V4ZM17.3793 8.5H14C13.7239 8.5 13.5 8.27614 13.5 8V4.62066L17.3793 8.5Z" fill="#242424" />
-                </svg>
-              </div>
-              <div className="flex gap-3 items-center">
-                <span className="text-sm 2xl:text-lg font-medium">Name</span>
-                <ChevronIcon />
-              </div>
-            </div>
-            <div className="flex flex-1 gap-3 items-center">
-              <span className="text-sm 2xl:text-lg font-medium">Modified</span>
-              <ChevronIcon />
-            </div>
-            <div className="flex flex-1 gap-3 items-center">
-              <span className="text-sm 2xl:text-lg font-medium">File size</span>
-              <ChevronIcon />
-            </div>
-            <div className="flex flex-1 gap-3 items-center">
-              <span className="text-sm 2xl:text-lg font-medium">Sharing</span>
-              <ChevronIcon />
-            </div>
-          </div>
-        ) : (
-          <div className="h-[70vh]">
-            <RecentFiles id="memory"/>
-          </div>
-        )
-      }
-
+      <Dialog
+        open={!!editFileId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditFileId(null);
+            setEditName("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename File/Folder</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            placeholder="Enter new name"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && editName.trim()) {
+                handleEdit();
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditFileId(null);
+                setEditName("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleEdit} disabled={!editName.trim()}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }
-
-export default files

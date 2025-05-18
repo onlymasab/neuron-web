@@ -2,7 +2,7 @@
 import React from 'react'
 import { LogoSvg } from '../logo_svg'
 import { FacebookIcon, GoogleIcon, InstagramIcon, LinkedinIcon, WhatsappIcon } from '../socialIcons'
-import { useDriveStore } from '@/stores/useDriveStore'
+import { useDriveStore } from '@/stores/useCloudStore'
 
 const RootFooter = () => {
     const navigation = [
