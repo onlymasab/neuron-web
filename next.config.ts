@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
+    domains: [
+      'fmbwoqdvvbcgicdotadw.supabase.co', // Supabase bucket
+      'lh3.googleusercontent.com',        // Google profile pictures
+    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -12,7 +16,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  
 };
 
 export default nextConfig;
