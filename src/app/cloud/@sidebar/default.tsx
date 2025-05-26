@@ -200,13 +200,9 @@ export function CreateMenu() {
       const toastId = toast.loading(
         <div>
           <span>Uploading {file.name}...</span>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-            <div
-              className="bg-blue-600 h-2.5 rounded-full"
-              style={{ width: `${uploadProgress[fileId] || 0}%` }}
-            />
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2 overflow-hidden">
+            <div className="h-2.5 w-[40%] bg-blue-600 rounded-full animate-progress-bar" />
           </div>
-          <span>{Math.round(uploadProgress[fileId] || 0)}%</span>
         </div>,
         { duration: Infinity }
       );
@@ -215,9 +211,9 @@ export function CreateMenu() {
         await uploadFile(file, undefined, (progress) => {
           setUploadProgress((prev) => ({ ...prev, [fileId]: progress }));
         });
-        toast.success(`Uploaded: ${file.name}`, { id: toastId });
+        toast.success(`Uploaded: ${file.name}`, { id: toastId, duration: 2000 });
       } catch (error: any) {
-        toast.error(`Failed to upload ${file.name}: ${error.message || 'Unknown error'}`, { id: toastId });
+        toast.error(`Failed to upload ${file.name}: ${error.message || 'Unknown error'}`, { id: toastId, duration: 3000 });
       } finally {
         setUploadProgress((prev) => {
           const newProgress = { ...prev };

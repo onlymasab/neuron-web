@@ -9,12 +9,12 @@ interface UserProfileHeaderProps {
 const UserProfileHeader = ({ profilePic, name, email }: UserProfileHeaderProps) => {
   return (
     <div className="flex items-center gap-4 px-6">
-      <div className="w-16 h-16 rounded-full overflow-hidden">
+      <div className="w-15 h-15 rounded-full overflow-hidden">
         <Image
           src={profilePic || "/images/user.png"}
           alt={name || "User"}
-          width={64}
-          height={64}
+          width={60}
+          height={60}
           className="object-cover w-full h-full"
         />
       </div>

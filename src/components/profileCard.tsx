@@ -9,7 +9,7 @@ interface ProfileCardProps {
 
 const ProfileCard: React.FC<ProfileCardProps> = ({ name, email, profilePic, onSignOut }) => {
     return (
-        <article className="overflow-hidden pt-8 flex flex-col gap-6 bg-white rounded-xl border border-zinc-300 max-w-[440px] shadow-[0_0_48px_rgba(0,0,0,0.15)]">
+        <article className="overflow-hidden pt-[3vh] flex flex-col gap-5 bg-white rounded-xl border border-zinc-300 max-w-[440px] shadow-[0_0_48px_rgba(0,0,0,0.15)]">
             <UserProfileHeader profilePic={profilePic || "/images/user.png"} name={name || "User"} email={email || "No email provided"} />
 
             <section className="flex gap-4 px-6 w-full text-sm text-[#121211]">

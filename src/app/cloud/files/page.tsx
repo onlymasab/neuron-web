@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
 
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCloudStore } from "@/stores/useCloudStore";
@@ -46,8 +46,11 @@ export default function Files() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { files, fetchFiles, updateFile, deleteFile } = useCloudStore();
+
   const [editFileId, setEditFileId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [previewImageSrc, setPreviewImageSrc] = useState<string | null>(null);
   const [rowSelection, setRowSelection] = useState({});
 
   useEffect(() => {
@@ -66,6 +69,7 @@ export default function Files() {
           checked={table.getIsAllPageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
+          className="mx-3 border-gray-300"
         />
       ),
       cell: ({ row }) => (
@@ -73,65 +77,86 @@ export default function Files() {
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
+          className="border-gray-300 bg-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.7)]"
         />
       ),
       enableSorting: false,
     },
     {
       accessorKey: "name",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          {column.getIsSorted() === "asc" ? (
-            <ChevronUp className="ml-2 h-4 w-4" />
-          ) : column.getIsSorted() === "desc" ? (
-            <ChevronDown className="ml-2 h-4 w-4" />
-          ) : null}
-        </Button>
-      ),
+      header: ({ column }) => {
+        const sorted = column.getIsSorted();
+        return (
+          <Button
+            variant="ghost"
+            onClick={() =>
+              column.toggleSorting(sorted === "asc")
+            }
+            className="flex items-center bg-transparent hover:bg-transparent cursor-pointer"
+          >
+            Name
+            {sorted === "asc" && <ChevronUp className="ml-2 h-4 w-4" />}
+            {sorted === "desc" && <ChevronDown className="ml-2 h-4 w-4" />}
+            {!sorted && <ArrowUpDown className="ml-2 h-4 w-4" />}
+          </Button>
+        );
+      },
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          {row.original.is_folder ? "📁" : "📄"}
-          {row.getValue("name")}
+        <div className="max-w-[40vw] flex items-center gap-2 overflow-hidden">
+          <span className="truncate inline-block max-w-full">
+            {row.original.is_folder ? <img src="/images/icons/folder-icon.png" alt="Folder" className="size-4 inline-block mr-2" /> :
+              row.original.file_extension === "pdf" ? <img src="/images/icons/file-icon.png" alt="PDF" className="size-4 inline-block mr-3" /> :
+                row.original.type === "image" ? <img src="/images/icons/image-icon.png" alt="Image" className="size-4 inline-block mr-3" /> :
+                  row.original.type === "video" ? <img src="/images/icons/video-icon.png" alt="Video" className="size-4 inline-block mr-3" /> :
+                    row.original.type === "audio" ? <img src="/images/icons/audio-icon.png" alt="Audio" className="size-4 inline-block mr-3" /> :
+                      "📄"}
+            {row.getValue("name")}
+          </span>
         </div>
       ),
     },
     {
       accessorKey: "updated_at",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Modified
-          {column.getIsSorted() === "asc" ? (
-            <ChevronUp className="ml-2 h-4 w-4" />
-          ) : column.getIsSorted() === "desc" ? (
-            <ChevronDown className="ml-2 h-4 w-4" />
-          ) : null}
-        </Button>
-      ),
+      header: ({ column }) => {
+        const sorted = column.getIsSorted();
+        return (
+          <Button
+            variant="ghost"
+
+            onClick={() =>
+              column.toggleSorting(sorted === "asc")
+            }
+            className="flex items-center bg-transparent hover:bg-transparent cursor-pointer"
+          >
+            Modified
+            {sorted === "asc" && <ChevronUp className="ml-2 h-4 w-4" />}
+            {sorted === "desc" && <ChevronDown className="ml-2 h-4 w-4" />}
+            {!sorted && <ArrowUpDown className="ml-2 h-4 w-4" />}
+          </Button>
+        );
+      },
       cell: ({ row }) =>
         new Date(row.getValue("updated_at")).toLocaleDateString(),
     },
     {
       accessorKey: "size",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          File Size
-          {column.getIsSorted() === "asc" ? (
-            <ChevronUp className="ml-2 h-4 w-4" />
-          ) : column.getIsSorted() === "desc" ? (
-            <ChevronDown className="ml-2 h-4 w-4" />
-          ) : null}
-        </Button>
-      ),
+      header: ({ column }) => {
+        const sorted = column.getIsSorted();
+        return (
+          <Button
+            variant="ghost"
+            onClick={() =>
+              column.toggleSorting(sorted === "asc")
+            }
+            className="flex items-center !px-0 bg-transparent hover:bg-transparent cursor-pointer mr-2"
+          >
+            File Size
+            {sorted === "asc" && <ChevronUp className="ml-2 h-4 w-4" />}
+            {sorted === "desc" && <ChevronDown className="ml-2 h-4 w-4" />}
+            {!sorted && <ArrowUpDown className="ml-2 h-4 w-4" />}
+          </Button>
+        );
+      },
       cell: ({ row }) =>
         row.original.is_folder
           ? "-"
@@ -140,8 +165,7 @@ export default function Files() {
     {
       accessorKey: "is_shared",
       header: "Sharing",
-      cell: ({ row }) =>
-        row.getValue("is_shared") ? "Shared" : "Private",
+      cell: ({ row }) => (row.getValue("is_shared") ? "Shared" : "Private"),
     },
     {
       id: "actions",
@@ -151,7 +175,7 @@ export default function Files() {
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
+              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-transparent">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -167,7 +191,7 @@ export default function Files() {
               <DropdownMenuItem
                 onClick={async () => {
                   try {
-                    await deleteFile(file.id);
+                    await useCloudStore.getState().deleteFile(file.id);
                     toast.success(`${file.name} moved to trash`);
                   } catch (error: any) {
                     toast.error(`Failed to delete ${file.name}: ${error.message}`);
@@ -176,17 +200,29 @@ export default function Files() {
               >
                 Delete
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  if (file.is_folder) {
-                    router.push(`/cloud/files?folder=${file.id}`);
-                  } else {
-                    window.open(file.file_url, "_blank");
-                  }
-                }}
-              >
-                View
-              </DropdownMenuItem>
+              {file.type === "image" || file.type === "video" ? (
+                <DropdownMenuItem
+                  onClick={() => {
+                    setPreviewImageSrc(file.file_url);
+                    setDialogOpen(true);
+                  }}
+                >
+                  View
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (file.is_folder) {
+                      router.push(`/cloud/files?folder=${file.id}`);
+                    } else if (file.file_extension === "pdf") {
+                      window.open(file.file_url, "_blank");
+                    }
+                  }}
+                >
+                  View
+                </DropdownMenuItem>
+              )}
+
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -215,7 +251,7 @@ export default function Files() {
       return;
     }
     try {
-      await updateFile(editFileId!, { name: editName });
+      await useCloudStore.getState().updateFile(editFileId!, { name: editName });
       toast.success(`Renamed to ${editName}`);
       setEditFileId(null);
       setEditName("");
@@ -232,53 +268,58 @@ export default function Files() {
           <p className="text-gray-500">No files or folders found.</p>
         </div>
       ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
+        <div className="rounded-md border overflow-hidden">
+          <div className="overflow-y-auto max-h-full">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}
+                    className="bg-[rgba(255,255,255,0.5)] backdrop-blur-lg border border-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.5)]"
+                  >
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
                             header.column.columnDef.header,
                             header.getContext()
                           )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                      className="bg-[rgba(255,255,255,0.5)] backdrop-blur-lg hover:bg-[#ececec] active:bg-[#ececec] transition-all duration-200 border border-[rgba(255,255,255,0.4)]"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
@@ -319,6 +360,22 @@ export default function Files() {
               Save
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) setPreviewImageSrc(null);
+      }}>
+        <DialogContent className="size-auto min-w-fit max-w-[90vw] max-h-[90vh] p-0 bg-transparent flex items-center justify-center border-none [&>button]:bg-white">
+          <DialogTitle className="sr-only">Image Preview</DialogTitle>
+          {previewImageSrc && (
+            <img
+              src={previewImageSrc}
+              alt="Preview"
+              className="size-auto max-w-[90vw] max-h-[80vh] block rounded-xl shadow-[0_2px_16px_rgba(0,0,0,0.2)]"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
