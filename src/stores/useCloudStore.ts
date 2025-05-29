@@ -254,8 +254,9 @@ export const useCloudStore = create<CloudStore>((set) => ({
     }
 
     set({ uploading: false });
-  },
+    },
 
+    updateFile: async (fileId, updates) => {
   // Update file metadata
   updateFile: async (fileId, updates) => {
     const { error } = await supabase
@@ -270,13 +271,12 @@ export const useCloudStore = create<CloudStore>((set) => ({
 
     set((state) => ({
       files: state.files.map((f) =>
-        f.id === fileId ? { ...f, ...updates, updated_at: new Date().toISOString() } : f
+      f.id === fileId ? { ...f, ...updates, updated_at: new Date().toISOString() } : f
       ),
     }));
-  },
+    },
 
-  // Soft delete file
-  deleteFile: async (fileId) => {
+    deleteFile: async (fileId) => {
     const { error } = await supabase
       .from('cloud')
       .update({ is_trashed: true, updated_at: new Date().toISOString() })

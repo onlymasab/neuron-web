@@ -3,9 +3,19 @@ import Image from "next/image"
 import Link from "next/link"
 import { HelpIcon, PremiumIcon, SettingIcon } from "../components/icons"
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useState } from "react";
+import ProfileCard from "@/components/profileCard";
 
 const Header = () => {
-    const { user } = useAuthStore();
+    const { user, signOut } = useAuthStore();
+    const [showProfileCard, setShowProfileCard] = useState(false);
+    const handleProfileClick = () => {
+        setShowProfileCard((prev) => !prev);
+    };
+    const handleSignOut = async () => {
+        await signOut();
+        setShowProfileCard(false);
+    };
     return (
         <header className="flex items-center justify-between w-full px-6 py-3 border-b border-gray-200">
             {/* Branding */}
@@ -65,9 +75,29 @@ const Header = () => {
                 {/* User Avatar */}
                 <div className="relative ml-1">
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-                    <button aria-label="Profile" className="hover:scale-105 transition rounded-full p-1.5">
-                        <Image src={user?.avatar || ""} alt="User Avatar" width={32} height={32} className="rounded-full" />
-                    </button>
+                    {user ? (
+                        <button
+                            onClick={handleProfileClick}
+                            className="hover:scale-105 transition rounded-full p-1.5"
+                        >
+                            <Image
+                                src={user?.avatar || ""}
+                                alt="User Avatar"
+                                width={32} height={32}
+                                className="rounded-full"
+                            />
+                        </button>
+                    ): null}
+                    {showProfileCard && (
+                    <div className="absolute top-13 right-3 w-[35vw] z-50">
+                        <ProfileCard
+                            name={user?.name!}
+                            email={user?.email!}
+                            profilePic={user?.avatar!}
+                            onSignOut={handleSignOut}
+                        />
+                    </div>
+                )}
                 </div>
             </div>
         </header>
