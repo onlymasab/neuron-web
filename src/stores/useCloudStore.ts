@@ -1,43 +1,51 @@
-// store/cloudStore.ts
-import { create } from 'zustand';
-import { v4 as uuidv4 } from 'uuid';
-import { createClient } from '@/lib/supabase/client';
-import { CloudModel } from '@/types/CloudModel';
+// Import required packages and modules
+import { create } from 'zustand'; // Zustand for state management
+import { v4 as uuidv4 } from 'uuid'; // To generate unique IDs
+import { createClient } from '@/lib/supabase/client'; // Supabase client setup
+import { CloudModel } from '@/types/CloudModel'; // Type definition for a cloud file/folder
 
+// Define the shape of the CloudStore state and its actions
 interface CloudStore {
-  files: CloudModel[];
-  uploading: boolean;
-  fetchFiles: (userId: string) => Promise<void>;
-  createFolder: (folderName: string, parentId?: string) => Promise<void>;
-  uploadFile: (file: File, parentId?: string, onProgress?: (progress: number) => void) => Promise<void>;
-  updateFile: (fileId: string, updates: Partial<CloudModel>) => Promise<void>;
-  deleteFile: (fileId: string) => Promise<void>;
-  reset: () => void;
+  files: CloudModel[]; // List of files/folders
+  uploading: boolean; // Uploading state indicator
+  fetchFiles: (userId: string) => Promise<void>; // Fetch user files
+  createFolder: (folderName: string, parentId?: string) => Promise<void>; // Create a new folder
+  uploadFile: (file: File, parentId?: string, onProgress?: (progress: number) => void) => Promise<void>; // Upload a file
+  updateFile: (fileId: string, updates: Partial<CloudModel>) => Promise<void>; // Update file metadata
+  deleteFile: (fileId: string) => Promise<void>; // Soft delete a file
+  reset: () => void; // Reset store state
 }
 
-const supabase = createClient();
+const supabase = createClient(); // Initialize Supabase client
 
+// Create Zustand store
 export const useCloudStore = create<CloudStore>((set) => ({
-  files: [],
-  uploading: false,
+  files: [], // Initial empty list of files
+  uploading: false, // Initially not uploading
 
+  // Fetch files for a specific user
   fetchFiles: async (userId) => {
     const { data, error } = await supabase
-      .from('cloud')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_trashed', false);
+      .from('cloud') // From "cloud" table
+      .select('*') // Select all columns
+      .eq('user_id', userId) // Match user ID
+      .eq('is_trashed', false); // Only show non-deleted files
+
     if (error) {
       console.error('Fetch files error:', error);
       throw new Error(error.message);
     }
-    set({ files: data });
+    set({ files: data }); // Set fetched files to state
   },
 
+  // Create a folder
   createFolder: async (folderName, parentId) => {
-    set({ uploading: true });
-    const folderId = uuidv4();
-    const folderPath = parentId ? `${parentId}/${folderName}` : folderName;
+    set({ uploading: true }); // Set uploading to true
+
+    const folderId = uuidv4(); // Generate unique folder ID
+    const folderPath = parentId ? `${parentId}/${folderName}` : folderName; // Path structure
+
+    // Folder metadata
     const meta: CloudModel = {
       id: folderId,
       name: folderPath,
@@ -60,11 +68,14 @@ export const useCloudStore = create<CloudStore>((set) => ({
       updated_at: new Date().toISOString(),
     };
 
+    // Optimistically add folder to UI
     set((state) => ({ files: [...state.files, meta] }));
 
-    const user = await supabase.auth.getUser();
+    const user = await supabase.auth.getUser(); // Get current user
     console.log('Supabase user for folder:', user);
+
     if (!user.data.user) {
+      // Mark folder as trashed if user not found
       set((state) => ({
         files: state.files.map((f) =>
           f.id === folderId ? { ...f, is_trashed: true, description: 'User not authenticated' } : f
@@ -74,16 +85,18 @@ export const useCloudStore = create<CloudStore>((set) => ({
       throw new Error('User not authenticated');
     }
 
-    meta.user_id = user.data.user.id;
+    meta.user_id = user.data.user.id; // Assign user ID to metadata
 
-    const emptyFile = new File([''], '.keep', { type: 'text/plain' });
-    const storagePath = `${folderId}/${folderPath}/.keep`;
+    const emptyFile = new File([''], '.keep', { type: 'text/plain' }); // Dummy file
+    const storagePath = `${folderId}/${folderPath}/.keep`; // Dummy file path to reserve folder
 
+    // Upload .keep file to Supabase Storage
     const { data, error } = await supabase.storage
       .from('cloud')
       .upload(storagePath, emptyFile, { upsert: true });
 
     if (error) {
+      // Mark folder as trashed if storage upload fails
       set((state) => ({
         files: state.files.map((f) =>
           f.id === folderId ? { ...f, is_trashed: true, description: error.message } : f
@@ -93,32 +106,15 @@ export const useCloudStore = create<CloudStore>((set) => ({
       throw new Error(error.message);
     }
 
+    // Get public URL of the uploaded dummy file
     const url = supabase.storage.from('cloud').getPublicUrl(data.path).data.publicUrl;
     meta.file_url = url;
 
     try {
       console.log('Inserting folder:', meta);
-      const { error: dbError } = await supabase.from('cloud').insert({
-        id: meta.id,
-        name: meta.name,
-        is_folder: meta.is_folder,
-        file_url: meta.file_url,
-        type: meta.type,
-        mime_type: meta.mime_type,
-        file_extension: meta.file_extension,
-        size: meta.size,
-        user_id: meta.user_id,
-        is_shared: meta.is_shared,
-        shared_with: meta.shared_with,
-        is_liked: meta.is_liked,
-        is_trashed: meta.is_trashed,
-        description: meta.description,
-        tags: meta.tags,
-        device_name: meta.device_name,
-        file_origin: meta.file_origin,
-        created_at: meta.created_at,
-        updated_at: meta.updated_at,
-      });
+
+      // Insert folder metadata into database
+      const { error: dbError } = await supabase.from('cloud').insert(meta);
 
       if (dbError) {
         console.error('Folder insert error:', dbError);
@@ -131,6 +127,7 @@ export const useCloudStore = create<CloudStore>((set) => ({
         throw new Error('Database insert failed');
       }
 
+      // Update state with final meta data
       set((state) => ({
         files: state.files.map((f) => (f.id === folderId ? meta : f)),
       }));
@@ -141,18 +138,20 @@ export const useCloudStore = create<CloudStore>((set) => ({
           f.id === folderId ? { ...f, is_trashed: true, description: 'Database insert failed' } : f
         ),
       }));
-      set({ uploading: false });
       throw new Error('Database insert failed');
     }
 
-    set({ uploading: false });
+    set({ uploading: false }); // Reset uploading state
   },
 
+  // Upload file
   uploadFile: async (file, parentId, onProgress) => {
     set({ uploading: true });
 
-    const fileId = uuidv4();
-    const filePath = parentId ? `${parentId}/${file.name}` : file.name;
+    const fileId = uuidv4(); // Unique file ID
+    const filePath = parentId ? `${parentId}/${file.name}` : file.name; // Full path in folder structure
+
+    // File metadata
     const meta: CloudModel = {
       id: fileId,
       name: filePath,
@@ -175,11 +174,13 @@ export const useCloudStore = create<CloudStore>((set) => ({
       updated_at: new Date().toISOString(),
     };
 
-    set((state) => ({ files: [...state.files, meta] }));
+    set((state) => ({ files: [...state.files, meta] })); // Optimistic update
 
-    const user = await supabase.auth.getUser();
+    const user = await supabase.auth.getUser(); // Get user
     console.log('Supabase user for file:', user);
+
     if (!user.data.user) {
+      // Mark as trashed if user not found
       set((state) => ({
         files: state.files.map((f) =>
           f.id === fileId ? { ...f, is_trashed: true, description: 'User not authenticated' } : f
@@ -189,11 +190,12 @@ export const useCloudStore = create<CloudStore>((set) => ({
       throw new Error('User not authenticated');
     }
 
-    meta.user_id = user.data.user.id;
+    meta.user_id = user.data.user.id; // Assign user ID
 
     const storagePath = parentId ? `${parentId}/${file.name}` : `${fileId}/${file.name}`;
     console.log('Uploading file to:', storagePath);
 
+    // Upload file to storage
     const { data, error } = await supabase.storage
       .from('cloud')
       .upload(storagePath, file, {
@@ -202,7 +204,7 @@ export const useCloudStore = create<CloudStore>((set) => ({
           if (event.totalBytes && event.bytesSent) {
             const progress = (event.bytesSent / event.totalBytes) * 100;
             console.log(`Upload progress: ${progress.toFixed(2)}%`);
-            if (onProgress) onProgress(progress);
+            if (onProgress) onProgress(progress); // Progress callback
           }
         },
       });
@@ -218,33 +220,14 @@ export const useCloudStore = create<CloudStore>((set) => ({
       throw new Error(error.message);
     }
 
-    console.log('Storage upload success:', data);
     const url = supabase.storage.from('cloud').getPublicUrl(data.path).data.publicUrl;
     meta.file_url = url;
 
     try {
       console.log('Inserting file:', meta);
-      const { error: dbError } = await supabase.from('cloud').insert({
-        id: meta.id,
-        name: meta.name,
-        is_folder: meta.is_folder,
-        file_url: meta.file_url,
-        type: meta.type,
-        mime_type: meta.mime_type,
-        file_extension: meta.file_extension,
-        size: meta.size,
-        user_id: meta.user_id,
-        is_shared: meta.is_shared,
-        shared_with: meta.shared_with,
-        is_liked: meta.is_liked,
-        is_trashed: meta.is_trashed,
-        description: meta.description,
-        tags: meta.tags,
-        device_name: meta.device_name,
-        file_origin: meta.file_origin,
-        created_at: meta.created_at,
-        updated_at: meta.updated_at,
-      });
+
+      // Insert file metadata into DB
+      const { error: dbError } = await supabase.from('cloud').insert(meta);
 
       if (dbError) {
         console.error('File insert error:', dbError);
@@ -267,13 +250,13 @@ export const useCloudStore = create<CloudStore>((set) => ({
           f.id === fileId ? { ...f, is_trashed: true, description: 'Database insert failed' } : f
         ),
       }));
-      set({ uploading: false });
       throw new Error('Database insert failed');
     }
 
     set({ uploading: false });
   },
 
+  // Update file metadata
   updateFile: async (fileId, updates) => {
     const { error } = await supabase
       .from('cloud')
@@ -292,6 +275,7 @@ export const useCloudStore = create<CloudStore>((set) => ({
     }));
   },
 
+  // Soft delete file
   deleteFile: async (fileId) => {
     const { error } = await supabase
       .from('cloud')
@@ -310,5 +294,6 @@ export const useCloudStore = create<CloudStore>((set) => ({
     }));
   },
 
+  // Reset state
   reset: () => set({ files: [], uploading: false }),
 }));

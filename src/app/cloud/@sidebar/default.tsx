@@ -206,7 +206,7 @@ export function CreateMenu() {
               style={{ width: `${uploadProgress[fileId] || 0}%` }}
             />
           </div>
-          <span>{Math.round(uploadProgress[fileId] || 0)}%</span>
+          {/* <span>{Math.round(uploadProgress[fileId] || 0)}%</span> */}
         </div>,
         { duration: Infinity }
       );
