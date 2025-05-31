@@ -3,422 +3,457 @@ import Lottie from 'lottie-react';
 import tickAnimation from '../lotties/tick.json';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Shield, Database, Lock, Globe } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { X, Sparkles, Shield, Database, Lock, Globe, Check } from 'lucide-react';
+import { useEffect, useState, useCallback, JSX, useRef } from 'react';
 import Confetti from 'react-confetti';
-import Particles from 'react-particles';
-import { loadFull } from 'tsparticles';
-import { Engine } from 'tsparticles-engine';
+import Particles from '@tsparticles/react';
+import { loadSlim } from '@tsparticles/slim';
+import type { Engine, ISourceOptions } from '@tsparticles/engine';
 
 interface ConversionModalProps {
-  videoSrc?: string; // Optional video source for background
-  progressBar: number; // 0–100
+  videoSrc: string; // Now required since you have video
+  progressBar?: number;
   showAnimation?: boolean;
   onClose?: () => void;
   onCancel?: () => void;
   animationClass?: string;
+  estimatedTime?: number;
 }
 
-const getProgressStage = (progress: number) => {
+interface ProgressStage {
+  stage: string;
+  icon: JSX.Element;
+  subTask: string;
+  description: string;
+}
+
+const getProgressStage = (progress: number): ProgressStage => {
   if (progress < 20)
     return {
-      stage: 'Initializing Scan...',
-      icon: <Sparkles size={20} />,
-      subProgress: progress * 5,
+      stage: 'Initializing Scan',
+      icon: <Sparkles className="text-cyan-400" />,
       subTask: 'Scanning nodes',
+      description: 'Analyzing your data structure'
     };
   if (progress < 40)
     return {
-      stage: 'Validating Data...',
-      icon: <Database size={20} />,
-      subProgress: (progress - 20) * 5,
+      stage: 'Validating Data',
+      icon: <Database className="text-blue-400" />,
       subTask: 'Verifying integrity',
+      description: 'Ensuring data meets standards'
     };
   if (progress < 60)
     return {
-      stage: 'Encrypting & Securing...',
-      icon: <Lock size={20} />,
-      subProgress: (progress - 40) * 5,
-      subTask: 'Applying quantum encryption',
+      stage: 'Encrypting',
+      icon: <Lock className="text-purple-400" />,
+      subTask: 'Applying encryption',
+      description: 'Securing with AES-256'
     };
   if (progress < 80)
     return {
-      stage: 'Storing in Synthis...',
-      icon: <Shield size={20} />,
-      subProgress: (progress - 60) * 5,
-      subTask: 'Uploading to secure vault',
+      stage: 'Storing in Synthis',
+      icon: <Shield className="text-teal-400" />,
+      subTask: 'Uploading to vault',
+      description: 'Distributing globally'
     };
   if (progress < 100)
     return {
-      stage: 'Connecting to Synthis Network...',
-      icon: <Globe size={20} />,
-      subProgress: (progress - 80) * 5,
-      subTask: 'Establishing network link',
+      stage: 'Network Sync',
+      icon: <Globe className="text-emerald-400" />,
+      subTask: 'Linking network',
+      description: 'Connecting decentralized nodes'
     };
   return {
-    stage: 'Finalizing...',
-    icon: <Sparkles size={20} />,
-    subProgress: 100,
+    stage: 'Finalizing',
+    icon: <Check className="text-green-400" />,
     subTask: 'Completing process',
+    description: 'Final checks'
   };
 };
 
 const ConversionModal = ({
   videoSrc,
-  progressBar,
-  showAnimation = true,
+  progressBar: externalProgressBar,
+  showAnimation: externalShowAnimation = true,
   onClose,
   onCancel,
   animationClass = '',
+  estimatedTime = 60
 }: ConversionModalProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
-  const { stage, icon, subProgress, subTask } = getProgressStage(progressBar);
+  const [isParticlesLoaded, setIsParticlesLoaded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [internalProgress, setInternalProgress] = useState(0);
+  const [showAnimation, setShowAnimation] = useState(externalShowAnimation);
+  const [timeRemaining, setTimeRemaining] = useState(estimatedTime);
+  const { stage, icon, subTask, description } = getProgressStage(internalProgress);
+  const doneButtonRef = useRef<HTMLButtonElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Trigger confetti when progress reaches 100
+  // Respect prefers-reduced-motion
   useEffect(() => {
-    if (progressBar === 100 && !showAnimation) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShowAnimation(false);
+    }
+  }, []);
+
+  // Simulate progress animation
+  useEffect(() => {
+    if (!externalShowAnimation || !showAnimation) return;
+
+    const totalDuration = estimatedTime * 1000;
+    const startTime = Date.now();
+    const endTime = startTime + totalDuration;
+
+    const updateProgress = () => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const remaining = Math.max(0, endTime - now);
+      const progress = Math.min((elapsed / totalDuration) * 100, 100);
+      
+      setInternalProgress(progress);
+      setTimeRemaining(Math.ceil(remaining / 1000));
+
+      if (progress < 100) {
+        requestAnimationFrame(updateProgress);
+      } else {
+        setShowAnimation(false);
+      }
+    };
+
+    requestAnimationFrame(updateProgress);
+
+    return () => cancelAnimationFrame(updateProgress as any);
+  }, [showAnimation, externalShowAnimation, estimatedTime]);
+
+  // Trigger confetti and focus on success
+  useEffect(() => {
+    if (!showAnimation && internalProgress >= 100) {
       setShowConfetti(true);
-      const timer = setTimeout(() => setShowConfetti(false), 4000);
+      const timer = setTimeout(() => setShowConfetti(false), 5000);
+      doneButtonRef.current?.focus();
       return () => clearTimeout(timer);
     }
-  }, [progressBar, showAnimation]);
-
-  const progressColor = progressBar < 50 ? '#06b6d4' : progressBar < 90 ? '#c084fc' : '#10b981';
+  }, [showAnimation, internalProgress]);
 
   // Particle initialization
-  const particlesInit = async (engine: Engine) => {
-    await loadFull(engine);
-  };
+  const particlesInit = useCallback(async (engine: Engine) => {
+    try {
+      await loadSlim(engine);
+      setIsParticlesLoaded(true);
+    } catch (error) {
+      console.error('Failed to initialize particles:', error);
+    }
+  }, []);
 
-  const particlesOptions = {
+  const particlesOptions: ISourceOptions = {
     particles: {
-      number: { value: 60, density: { enable: true, value_area: 800 } },
-      color: { value: ['#06b6d4', '#c084fc', '#10b981', '#f472b6'] },
-      shape: { type: ['circle', 'triangle'], polygon: { nb_sides: 6 } },
-      opacity: { value: 0.6, random: true },
-      size: { value: 2.5, random: true },
+      number: { value: 40, density: { enable: true, value_area: 800 } },
+      color: { value: ['#06b6d4', '#3b82f6', '#8b5cf6', '#10b981'] },
+      shape: { type: 'circle' },
+      opacity: { value: 0.4, random: true },
+      size: { value: { min: 1, max: 3 }, random: true },
       move: {
         enable: true,
-        speed: 1.5,
+        speed: { min: 0.5, max: 1.5 },
         direction: 'none',
         random: true,
-        out_mode: 'bounce',
-      },
-      line_linked: {
-        enable: true,
-        distance: 100,
-        color: '#06b6d4',
-        opacity: 0.3,
-        width: 1,
-      },
+        outModes: { default: 'out' },
+        trail: {
+          enable: true,
+          length: 10,
+          fillColor: '#000000'
+        }
+      }
     },
     interactivity: {
-      events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: false } },
+      events: {
+        onHover: { enable: true, mode: 'repulse' },
+        onClick: { enable: true, mode: 'push' }
+      }
     },
-    retina_detect: true,
+    retina_detect: true
+  };
+
+  const progressColor = () => {
+    if (internalProgress < 30) return '#06b6d4';
+    if (internalProgress < 70) return '#3b82f6';
+    if (internalProgress < 90) return '#8b5cf6';
+    return '#10b981';
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   const handleDoneClick = () => {
-    console.log('Done button clicked, triggering onClose');
     onClose?.();
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-lg transition-all duration-500"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/95 backdrop-blur-sm"
       role="dialog"
       aria-labelledby="conversion-modal-title"
       aria-modal="true"
-      style={{ fontFamily: "'Orbitron', sans-serif" }}
     >
       <AnimatePresence>
         {showAnimation ? (
           <motion.div
             key="progress"
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="relative w-[720px] h-[720px] max-w-[90vw] max-h-[90vh] p-6 sm:p-10 rounded-3xl bg-white/90 shadow-[0_0_30px_rgba(0,255,255,0.2)] overflow-hidden"
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="relative w-full max-w-3xl mx-4 p-6 rounded-2xl bg-gray-800/90 border border-gray-700 shadow-xl overflow-hidden"
           >
-            {/* Background Video or Fallback Animation */}
-            {videoSrc ? (
-              <video
-                preload="auto"
-                autoPlay
-                loop
-                muted
-                className="absolute inset-0 w-full h-full object-cover opacity-35"
-              >
-                <source src={videoSrc} type="video/mp4" />
-              </video>
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-200/50 to-magenta-200/50 opacity-40 animate-pulse" />
-            )}
-
-            {/* Circuit Pattern Overlay */}
-            <div
-              className="absolute inset-0 opacity-15"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0L0 20v40l40 20 40-20V20L40 0z' fill='%2306b6d4' fill-opacity='0.3'/%3E%3Cpath d='M40 10L10 25v30l30 15 30-15V25L40 10z' fill='none' stroke='%23c084fc' stroke-width='1'/%3E%3C/svg%3E")`,
-                backgroundSize: '80px 80px',
-              }}
-            />
-
-            {/* Data Stream Animation */}
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute w-full h-1 bg-cyan-400/50 animate-data-stream" />
-              <div className="absolute w-full h-1 bg-purple-400/50 animate-data-stream-delayed" style={{ top: '50%' }} />
+            {/* Background elements */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-800/80" />
+              
+              {/* Animated grid pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <svg
+                  className="w-full h-full"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <pattern
+                    id="grid-pattern"
+                    x="0"
+                    y="0"
+                    width="40"
+                    height="40"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <path
+                      d="M 40 0 L 0 0 0 40"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="0.5"
+                    />
+                  </pattern>
+                  <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+                </svg>
+              </div>
+              
+              {/* Particles */}
+              {isParticlesLoaded && (
+                <Particles
+                  id="tsparticles"
+                  init={particlesInit}
+                  options={particlesOptions}
+                  className="absolute inset-0 opacity-20"
+                />
+              )}
             </div>
-
-            {/* Particles */}
-            <Particles
-              id="tsparticles"
-              init={particlesInit}
-              options={particlesOptions}
-              className="absolute inset-0 z-0"
-            />
-
-            {/* Double Gradient Border */}
-            <div className="absolute inset-0 rounded-3xl overflow-hidden">
-              <div
-                className="absolute inset-[-3px] bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 animate-gradient-border"
-                style={{ animation: 'gradient-border 2s linear infinite' }}
-              />
-              <div
-                className="absolute inset-[-1px] bg-gradient-to-r from-cyan-300/50 via-purple-300/50 to-pink-300/50 animate-gradient-border-reverse"
-                style={{ animation: 'gradient-border-reverse 2s linear infinite' }}
-              />
-            </div>
-
-            {/* Cancel Button */}
-            {onCancel && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-4 right-4 text-gray-600 hover:text-cyan-400 focus:ring-2 focus:ring-cyan-400 bg-white/70 rounded-full shadow-[0_0_10px_rgba(0,255,255,0.3)] hover:shadow-[0_0_15px_rgba(0,255,255,0.5)]"
-                onClick={onCancel}
-                aria-label="Cancel conversion"
-              >
-                <X size={20} />
-              </Button>
-            )}
 
             {/* Content */}
-            <div className="relative z-10 flex flex-col items-center justify-center h-full text-center">
-              <motion.div
-                className="flex items-center gap-3 mb-6"
-                animate={{ scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <span className="text-cyan-400" aria-hidden="true">{icon}</span>
-                <span className="text-cyan-400 text-lg font-medium tracking-wide">
-                  Stage {Math.floor(progressBar / 20) + 1}/5
-                </span>
-              </motion.div>
-
-              <AnimatePresence mode="wait">
-                <motion.h2
-                  key={stage}
-                  initial={{ opacity: 0, y: 15, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -15, scale: 0.9 }}
-                  transition={{ duration: 0.5, ease: 'easeInOut' }}
-                  id="conversion-modal-title"
-                  className={`text-2xl sm:text-3xl font-bold text-gray-800 mb-4 tracking-wide text-shadow-[0_0_5px_rgba(0,255,255,0.5)] ${animationClass}`}
+            <div className="relative z-10 flex flex-col space-y-6">
+              {/* Header */}
+              <div className="flex justify-between items-start">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="flex items-center space-x-3"
                 >
-                  {stage}
-                </motion.h2>
-              </AnimatePresence>
+                  <motion.div
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+                    className="p-2 rounded-full bg-gray-700/50 backdrop-blur-sm"
+                  >
+                    {icon}
+                  </motion.div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-200">{stage}</h2>
+                    <p className="text-sm text-gray-400">{subTask}</p>
+                  </div>
+                </motion.div>
+                
+                {onCancel && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={onCancel}
+                    className="p-1.5 rounded-full text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-colors"
+                    aria-label="Cancel conversion"
+                  >
+                    <X size={20} />
+                  </motion.button>
+                )}
+              </div>
 
+              {/* Video Player - Added above progress bar */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-sm text-gray-600 mb-6 flex items-center gap-2"
-                title={`Sub-task: ${subTask}`}
-                aria-label={`Sub-task: ${subTask}, ${subProgress.toFixed(0)}% complete`}
+                transition={{ delay: 0.2 }}
+                className="relative rounded-lg overflow-hidden bg-black aspect-video"
               >
-                <span>{subTask}</span>
-                <span className="text-cyan-500 font-medium">{subProgress.toFixed(0)}%</span>
+                <video
+                  ref={videoRef}
+                  src={videoSrc}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                  onError={() => setVideoError(true)}
+                />
+                {videoError && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-gray-500">
+                    Video unavailable
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-900/80 to-transparent" />
               </motion.div>
 
-              <div className="w-full max-w-[80%] sm:max-w-[450px] relative">
-                {/* Circular Progress Ring */}
-                <svg className="absolute -top-5 -left-5 w-16 h-16">
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    fill="none"
-                    stroke="#e5e7eb"
-                    strokeWidth="4"
-                  />
-                  <motion.circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    fill="none"
-                    stroke={progressColor}
-                    strokeWidth="4"
-                    strokeDasharray="175.92"
-                    strokeDashoffset={175.92 * (1 - subProgress / 100)}
-                    strokeLinecap="round"
-                    initial={{ strokeDashoffset: 175.92 }}
-                    animate={{ strokeDashoffset: 175.92 * (1 - subProgress / 100) }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </svg>
-
-                {/* Main Progress Bar */}
-                <Progress
-                  value={progressBar}
-                  className="h-5 bg-gray-200/40 rounded-full overflow-hidden shadow-[inset_0_0_10px_rgba(0,0,0,0.1)]"
-                  indicatorClassName={`transition-all duration-500 ${progressColor} shadow-[0_0_15px_${progressColor},0_0_25px_${progressColor}] animate-pulse`}
-                />
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute inset-0 flex items-center justify-center text-sm font-bold text-gray-900 tracking-wide"
+              {/* Progress bar */}
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm text-gray-400">
+                  <span>Progress</span>
+                  <span>{internalProgress.toFixed(0)}%</span>
+                </div>
+                <motion.div
+                  initial={{ scaleX: 0.95, opacity: 0.8 }}
+                  animate={{ scaleX: 1, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
                 >
-                  {progressBar}%
-                </motion.span>
+                  <Progress
+                    value={internalProgress}
+                    className="h-2.5 bg-gray-700/50"
+                    indicatorClassName={`bg-gradient-to-r from-${progressColor().replace('#', '')} to-${progressColor().replace('#', '')}/80 transition-all duration-300`}
+                  />
+                </motion.div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>{description}</span>
+                  <span>ETA: {formatTime(timeRemaining)}</span>
+                </div>
+              </div>
 
-                {/* Sub-Progress Bar */}
-                <Progress
-                  value={subProgress}
-                  className="h-2 bg-gray-300/50 rounded-full mt-2"
-                  indicatorClassName={`transition-all duration-500 ${progressColor} opacity-70`}
-                />
+              {/* Stage visualization */}
+              <div className="relative pt-2">
+                <div className="absolute top-0 left-0 h-1 w-full bg-gray-700/50 rounded-full" />
+                <div className="flex justify-between relative z-10">
+                  {[0, 20, 40, 60, 80, 100].map((point) => (
+                    <motion.div
+                      key={point}
+                      initial={{ scale: 0.8 }}
+                      animate={{ 
+                        scale: internalProgress >= point ? 1.1 : 0.9,
+                        backgroundColor: internalProgress >= point ? progressColor() : 'rgba(55, 65, 81, 0.5)'
+                      }}
+                      transition={{ type: 'spring', stiffness: 500 }}
+                      className={`w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center ${internalProgress >= point ? 'shadow-md' : ''}`}
+                    >
+                      {internalProgress >= point && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          <Check size={12} className="text-white" />
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>
         ) : (
           <motion.div
             key="success"
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="relative w-[720px] h-[720px] max-w-[90vw] max-h-[90vh] p-6 sm:p-10 rounded-3xl bg-gradient-to-b from-gray-900/95 to-black/95 border border-green-700/50 shadow-[0_0_30px_rgba(16,185,129,0.2)] backdrop-blur-sm overflow-hidden"
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="relative w-full max-w-md mx-4 p-8 rounded-2xl bg-gray-800/90 border border-gray-700 shadow-xl overflow-hidden text-center"
           >
-            {/* Particles */}
-            <Particles
-              id="tsparticles-success"
-              init={particlesInit}
-              options={{
-                ...particlesOptions,
-                particles: { ...particlesOptions.particles, number: { value: 40 }, line_linked: { enable: false } },
-              }}
-              className="absolute inset-0 z-0"
-            />
-
-            {/* Circuit Pattern Overlay */}
-            <div
-              className="absolute inset-0 opacity-10"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0L0 20v40l40 20 40-20V20L40 0z' fill='%2310b981' fill-opacity='0.3'/%3E%3Cpath d='M40 10L10 25v30l30 15 30-15V25L40 10z' fill='none' stroke='%23c084fc' stroke-width='1'/%3E%3C/svg%3E")`,
-                backgroundSize: '80px 80px',
-              }}
-            />
-
+            {/* Confetti */}
             {showConfetti && (
               <Confetti
                 width={window.innerWidth}
-                height={720}
+                height={window.innerHeight}
                 recycle={false}
-                numberOfPieces={200}
-                tweenDuration={8000}
-                colors={['#10b981', '#06b6d4', '#c084fc', '#f472b6']}
+                numberOfPieces={400}
+                colors={['#10b981', '#06b6d4', '#3b82f6', '#8b5cf6']}
+                gravity={0.2}
+                opacity={0.8}
               />
             )}
-            <motion.div
-              initial={{ scale: 0, rotate: 0 }}
-              animate={{ scale: 1, rotate: 360 }}
-              transition={{ duration: 1, ease: 0.2 }}
-            >
-              <Lottie
-                animationData={tickAnimation}
-                loop={false}
-                autoplay
-                className="w-[min(20vw,160px)] h-[min(20vw,160px)] mx-auto mt-10 sm:mt-14"
-              />
-            </motion.div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-green-400 mt-6 text-center tracking-wide text-shadow-[0_0_5px_rgba(16,185,129,0.5)]">
-              Data Ready!
-            </h2>
-            <p className="text-base sm:text-lg text-gray-300 mt-4 mb-8 text-center px-4">
-              Your conversion is complete. Synthis system is now connected, and data is securely stored.
-            </p>
-            <Button
-              variant="secondary"
-              className="w-full py-3 text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 rounded-lg transition-all focus:ring-2 focus:ring-green-400 shadow-[0_0_20px_rgba(16,185,129,0.6)] hover:shadow-[0_0_30px_rgba(16,185,129,0.8)] animate-pulse"
-              onClick={handleDoneClick}
-              aria-label="Close modal and continue"
-            >
-              Done
-            </Button>
+
+            {/* Background elements */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-800/80" />
+              {isParticlesLoaded && (
+                <Particles
+                  id="tsparticles-success"
+                  init={particlesInit}
+                  options={{
+                    ...particlesOptions,
+                    particles: {
+                      ...particlesOptions.particles,
+                      number: { value: 60 },
+                      move: { speed: { min: 0.8, max: 2 } },
+                      color: { value: ['#10b981', '#06b6d4'] }
+                    }
+                  }}
+                  className="absolute inset-0 opacity-30"
+                />
+              )}
+            </div>
+
+            {/* Content */}
+            <div className="relative z-10 flex flex-col items-center space-y-6">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 500 }}
+                className="relative"
+              >
+                <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping" />
+                <div className="w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center backdrop-blur-sm">
+                  <Lottie
+                    animationData={tickAnimation}
+                    loop={false}
+                    className="w-16 h-16"
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-2"
+              >
+                <h2 className="text-2xl font-bold text-emerald-400">Conversion Complete!</h2>
+                <p className="text-gray-300">
+                  Your data is now securely stored in the Synthis Network.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="w-full pt-4"
+              >
+                <Button
+                  ref={doneButtonRef}
+                  onClick={handleDoneClick}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  Continue
+                </Button>
+              </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* CSS for Animations */}
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
-
-        @keyframes gradient-border {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        @keyframes gradient-border-reverse {
-          0% {
-            transform: translateX(100%);
-          }
-          100% {
-            transform: translateX(-100%);
-          }
-        }
-        @keyframes data-stream {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        @keyframes data-stream-delayed {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        .animate-gradient-border {
-          filter: blur(3px);
-        }
-        .animate-gradient-border-reverse {
-          filter: blur(2px);
-        }
-        .animate-data-stream {
-          animation: data-stream 3s linear infinite;
-        }
-        .animate-data-stream-delayed {
-          animation: data-stream-delayed 3s linear infinite 1.5s;
-        }
-        .font-sans {
-          font-family: 'Orbitron', sans-serif;
-        }
-        .text-shadow-[0_0_5px_rgba(0,255,255,0.5)] {
-          text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-        }
-        .text-shadow-[0_0_5px_rgba(16,185,129,0.5)] {
-          text-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
-        }
-      `}</style>
     </div>
   );
 };
