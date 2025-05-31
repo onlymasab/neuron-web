@@ -1,13 +1,11 @@
-// components/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { JSX } from "react/jsx-runtime";
 import { toast } from "sonner";
-
 import {
   FileIcon,
   HomeIcon,
@@ -17,10 +15,8 @@ import {
   TrashIcon,
 } from "../components/icons";
 import { Plus } from "lucide-react";
-
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCloudStore } from "@/stores/useCloudStore";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +26,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import {
   Dialog,
   DialogContent,
@@ -39,13 +34,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
+
+  // Get parentId from URL query parameter (e.g., /cloud/files?folder=ID)
+  const parentId = searchParams.get("folder") || undefined;
 
   const navigation = [
     { name: "Home", href: "/cloud", icon: <HomeIcon /> },
@@ -63,7 +61,7 @@ export default function Sidebar() {
     <div className="flex flex-col h-full bg-[#ebf2fd] pt-4 pb-6 justify-between">
       <div>
         <div className="px-6 py-4">
-          <CreateMenu />
+          <CreateMenu parentId={parentId} />
         </div>
 
         <span className="px-6 pb-4 mb-3 text-md font-semibold text-gray-800">
@@ -144,15 +142,37 @@ const StorageIndicator = () => {
   );
 };
 
-export function CreateMenu() {
+interface UploadProgressToastProps {
+  fileName: string;
+  progress: number;
+  success?: boolean;
+}
+
+const UploadProgressToast = ({ fileName, progress, success = false }: UploadProgressToastProps) => {
+  return (
+    <div>
+      <span>Uploading {fileName}...</span>
+      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2 overflow-hidden">
+        <div
+          className={`h-2.5 rounded-full transition-all duration-500 ease-in-out ${
+            success ? "bg-green-600" : "bg-blue-600"
+          }`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+export function CreateMenu({ parentId }: { parentId?: string }) {
   const [open, setOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>(
+    {}
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { createFolder, uploadFile, uploading } = useCloudStore();
   const { user } = useAuthStore();
-
-  console.log('Authenticated user:', user);
 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) {
@@ -160,7 +180,7 @@ export function CreateMenu() {
       return;
     }
 
-    if (/[<>:"/\\|?*]/.test(folderName)) {
+    if (/[<>:\"/\\|?*]/.test(folderName)) {
       toast.error("Folder name contains invalid characters.");
       return;
     }
@@ -168,64 +188,129 @@ export function CreateMenu() {
     const toastId = toast.loading("Creating folder...");
 
     try {
-      await createFolder(folderName);
+      await createFolder(folderName, parentId);
       toast.success(`Folder created: ${folderName}`, { id: toastId });
       setFolderName("");
       setOpen(false);
     } catch (error: any) {
-      toast.error(`Failed to create folder: ${error.message || 'Unknown error'}`, { id: toastId });
+      toast.error(`Failed to create folder: ${error.message || "Unknown error"}`, {
+        id: toastId,
+      });
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const files = e.target.files;
+  if (!files || files.length === 0) return;
 
-    const allowedTypes = [
-      "application/pdf",
-      "image/png",
-      "image/jpeg",
-      "video/mp4",
-      "audio/mpeg",
-      "audio/mp3",
-    ];
+  const allowedTypes = [
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "video/mp4",
+    "audio/mpeg",
+    "audio/mp3",
+  ];
 
-    for (const file of Array.from(files)) {
-      if (!allowedTypes.includes(file.type)) {
-        toast.error(`Unsupported file: ${file.name}`);
-        continue;
-      }
+  for (const file of Array.from(files)) {
+    if (!allowedTypes.includes(file.type)) {
+      toast.error(`Unsupported file: ${file.name}`);
+      continue;
+    }
 
-      const fileId = `${file.name}-${Date.now()}`; // Unique ID for progress tracking
-      const toastId = toast.loading(
+    const fileId = `${file.name}-${Date.now()}`;
+
+    // STAGE 1: Preparing…
+    toast.message(
+      <div>
+        <span className="font-medium">Preparing {file.name}…</span>
+        <div className="mt-2 animate-pulse text-sm text-gray-500">
+          Initializing upload...
+        </div>
+      </div>,
+      { id: fileId, duration: Infinity }
+    );
+    await new Promise((res) => setTimeout(res, 1000)); // 1 sec delay
+
+    // STAGE 2: Uploading… (fake progress)
+    let fakeProgress = 0;
+    toast.message(
+      <div>
+        <span className="font-medium">Uploading {file.name}…</span>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2 overflow-hidden">
+          <div
+            className="h-2.5 bg-blue-600 rounded-full transition-all duration-300"
+            style={{ width: `${fakeProgress}%` }}
+          />
+        </div>
+        <div className="text-right text-xs text-gray-500 mt-1">{fakeProgress}%</div>
+      </div>,
+      { id: fileId, duration: Infinity }
+    );
+
+    const progressInterval = setInterval(() => {
+      fakeProgress = Math.min(fakeProgress + Math.floor(Math.random() * 15) + 10, 85);
+      toast.message(
         <div>
-          <span>Uploading {file.name}...</span>
+          <span className="font-medium">Uploading {file.name}…</span>
           <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2 overflow-hidden">
-            <div className="h-2.5 w-[40%] bg-blue-600 rounded-full animate-progress-bar" />
+            <div
+              className="h-2.5 bg-blue-600 rounded-full transition-all duration-300"
+              style={{ width: `${fakeProgress}%` }}
+            />
           </div>
-          {/* <span>{Math.round(uploadProgress[fileId] || 0)}%</span> */}
+          <div className="text-right text-xs text-gray-500 mt-1">{fakeProgress}%</div>
         </div>,
-        { duration: Infinity }
+        { id: fileId, duration: Infinity }
       );
+    }, Math.random() * 1000 + 500); // random every 0.5–1.5s
 
-      try {
-        await uploadFile(file, undefined, (progress) => {
-          setUploadProgress((prev) => ({ ...prev, [fileId]: progress }));
-        });
-        toast.success(`Uploaded: ${file.name}`, { id: toastId, duration: 2000 });
-      } catch (error: any) {
-        toast.error(`Failed to upload ${file.name}: ${error.message || 'Unknown error'}`, { id: toastId, duration: 3000 });
-      } finally {
-        setUploadProgress((prev) => {
-          const newProgress = { ...prev };
-          delete newProgress[fileId];
-          return newProgress;
-        });
-      }
+    await new Promise((res) => setTimeout(res, 2000 + Math.random() * 1000)); // ~2–3s delay
+
+    clearInterval(progressInterval);
+
+    // STAGE 3: Finalizing…
+    toast.message(
+      <div>
+        <span className="font-medium">Finalizing {file.name}…</span>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2 overflow-hidden">
+          <div className="h-2.5 bg-blue-400 rounded-full animate-pulse" style={{ width: `90%` }} />
+        </div>
+        <div className="text-right text-xs text-blue-500 mt-1">Almost done…</div>
+      </div>,
+      { id: fileId, duration: Infinity }
+    );
+    await new Promise((res) => setTimeout(res, 1500)); // ~1.5s delay
+
+    try {
+      await uploadFile(file, parentId, () => {}); // ignore real progress
+
+      // STAGE 4: Success!
+      toast.message(
+        <div>
+          <span className="font-medium text-green-600">Uploaded {file.name} ✔️</span>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2 overflow-hidden">
+            <div
+              className="h-2.5 bg-green-500 rounded-full transition-all duration-500"
+              style={{ width: `100%` }}
+            />
+          </div>
+          <div className="text-right text-xs text-green-600 mt-1">100%</div>
+        </div>,
+        { id: fileId, duration: 2000 }
+      );
+    } catch (error: any) {
+      toast.error(
+        `Failed to upload ${file.name}: ${error.message || "Unknown error"}`,
+        { id: fileId, duration: 3000 }
+      );
     }
+  }
 
-    e.target.value = "";
-  };
+  if (fileInputRef.current) {
+    fileInputRef.current.value = "";
+  }
+};
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -293,27 +378,22 @@ export function CreateMenu() {
           value={folderName}
           onChange={(e) => setFolderName(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && folderName.trim() && !uploading) {
-              e.preventDefault();
+            if (e.key === "Enter") {
               handleCreateFolder();
             }
           }}
-          disabled={uploading || !user}
+          autoFocus
         />
 
         <DialogFooter>
-          <Button
-            onClick={() => setOpen(false)}
-            variant="outline"
-            disabled={uploading}
-          >
+          <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>
           <Button
+            disabled={!folderName.trim() || uploading}
             onClick={handleCreateFolder}
-            disabled={!folderName.trim() || uploading || !user}
           >
-            {uploading ? "Creating..." : "Create"}
+            Create
           </Button>
         </DialogFooter>
       </DialogContent>

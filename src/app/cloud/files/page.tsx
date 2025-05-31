@@ -1,4 +1,3 @@
-// app/files.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -36,7 +35,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowUpDown, ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronDown,
+  ChevronUp,
+  MoreHorizontal,
+} from "lucide-react";
 
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCloudStore } from "@/stores/useCloudStore";
@@ -89,9 +93,7 @@ export default function Files() {
         return (
           <Button
             variant="ghost"
-            onClick={() =>
-              column.toggleSorting(sorted === "asc")
-            }
+            onClick={() => column.toggleSorting(sorted === "asc")}
             className="flex items-center bg-transparent hover:bg-transparent cursor-pointer"
           >
             Name
@@ -104,12 +106,39 @@ export default function Files() {
       cell: ({ row }) => (
         <div className="max-w-[40vw] flex items-center gap-2 overflow-hidden">
           <span className="truncate inline-block max-w-full">
-            {row.original.is_folder ? <img src="/images/icons/folder-icon.png" alt="Folder" className="size-4 inline-block mr-2" /> :
-              row.original.file_extension === "pdf" ? <img src="/images/icons/file-icon.png" alt="PDF" className="size-4 inline-block mr-3" /> :
-                row.original.type === "image" ? <img src="/images/icons/image-icon.png" alt="Image" className="size-4 inline-block mr-3" /> :
-                  row.original.type === "video" ? <img src="/images/icons/video-icon.png" alt="Video" className="size-4 inline-block mr-3" /> :
-                    row.original.type === "audio" ? <img src="/images/icons/audio-icon.png" alt="Audio" className="size-4 inline-block mr-3" /> :
-                      "📄"}
+            {row.original.is_folder ? (
+              <img
+                src="/images/icons/folder-icon.png"
+                alt="Folder"
+                className="size-4 inline-block mr-2"
+              />
+            ) : row.original.file_extension === "pdf" ? (
+              <img
+                src="/images/icons/file-icon.png"
+                alt="PDF"
+                className="size-4 inline-block mr-3"
+              />
+            ) : row.original.type === "image" ? (
+              <img
+                src="/images/icons/image-icon.png"
+                alt="Image"
+                className="size-4 inline-block mr-3"
+              />
+            ) : row.original.type === "video" ? (
+              <img
+                src="/images/icons/video-icon.png"
+                alt="Video"
+                className="size-4 inline-block mr-3"
+              />
+            ) : row.original.type === "audio" ? (
+              <img
+                src="/images/icons/audio-icon.png"
+                alt="Audio"
+                className="size-4 inline-block mr-3"
+              />
+            ) : (
+              "📄"
+            )}
             {row.getValue("name")}
           </span>
         </div>
@@ -122,10 +151,7 @@ export default function Files() {
         return (
           <Button
             variant="ghost"
-
-            onClick={() =>
-              column.toggleSorting(sorted === "asc")
-            }
+            onClick={() => column.toggleSorting(sorted === "asc")}
             className="flex items-center bg-transparent hover:bg-transparent cursor-pointer"
           >
             Modified
@@ -145,9 +171,7 @@ export default function Files() {
         return (
           <Button
             variant="ghost"
-            onClick={() =>
-              column.toggleSorting(sorted === "asc")
-            }
+            onClick={() => column.toggleSorting(sorted === "asc")}
             className="flex items-center !px-0 bg-transparent hover:bg-transparent cursor-pointer mr-2"
           >
             File Size
@@ -184,6 +208,7 @@ export default function Files() {
                 onClick={() => {
                   setEditFileId(file.id);
                   setEditName(file.name);
+                  setDialogOpen(true);
                 }}
               >
                 Edit
@@ -192,6 +217,9 @@ export default function Files() {
                 onClick={async () => {
                   try {
                     await useCloudStore.getState().deleteFile(file.id);
+                    useCloudStore.setState((state) => ({
+                      files: state.files.filter((f) => f.id !== file.id),
+                    }));
                     toast.success(`${file.name} moved to trash`);
                   } catch (error: any) {
                     toast.error(`Failed to delete ${file.name}: ${error.message}`);
@@ -200,29 +228,19 @@ export default function Files() {
               >
                 Delete
               </DropdownMenuItem>
-              {file.type === "image" || file.type === "video" ? (
-                <DropdownMenuItem
-                  onClick={() => {
+              <DropdownMenuItem
+                onClick={() => {
+                  if (file.is_folder) {
+                    router.push(`/cloud/files?folder=${file.id}`);
+                  } else if (file.file_extension === "pdf") {
+                    window.open(file.file_url, "_blank");
+                  } else if (file.type === "image" || file.type === "video") {
                     setPreviewImageSrc(file.file_url);
-                    setDialogOpen(true);
-                  }}
-                >
-                  View
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (file.is_folder) {
-                      router.push(`/cloud/files?folder=${file.id}`);
-                    } else if (file.file_extension === "pdf") {
-                      window.open(file.file_url, "_blank");
-                    }
-                  }}
-                >
-                  View
-                </DropdownMenuItem>
-              )}
-
+                  }
+                }}
+              >
+                View
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -251,10 +269,11 @@ export default function Files() {
       return;
     }
     try {
-      await useCloudStore.getState().updateFile(editFileId!, { name: editName });
+      await updateFile(editFileId!, { name: editName });
       toast.success(`Renamed to ${editName}`);
       setEditFileId(null);
       setEditName("");
+      setDialogOpen(false);
     } catch (error: any) {
       toast.error(`Failed to rename: ${error.message}`);
     }
@@ -270,114 +289,65 @@ export default function Files() {
       ) : (
         <div className="rounded-md border overflow-hidden">
           <div className="overflow-y-auto max-h-full">
-            <Table>
-              <TableHeader>
+            <Table className="bg-white">
+              <TableHeader className="bg-white">
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}
+                  <TableRow
+                    key={headerGroup.id}
                     className="bg-[rgba(255,255,255,0.5)] backdrop-blur-lg border border-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.5)]"
                   >
                     {headerGroup.headers.map((header) => (
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
-                          : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     ))}
                   </TableRow>
                 ))}
               </TableHeader>
               <TableBody>
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                      className="bg-[rgba(255,255,255,0.5)] backdrop-blur-lg hover:bg-[#ececec] active:bg-[#ececec] transition-all duration-200 border border-[rgba(255,255,255,0.4)]"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No results.
-                    </TableCell>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="hover:bg-[rgba(255,255,255,0.5)] cursor-pointer"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
                   </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           </div>
         </div>
       )}
 
-      <Dialog
-        open={!!editFileId}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditFileId(null);
-            setEditName("");
-          }
-        }}
-      >
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename File/Folder</DialogTitle>
+            <DialogTitle>Edit File Name</DialogTitle>
           </DialogHeader>
           <Input
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
-            placeholder="Enter new name"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && editName.trim()) {
-                handleEdit();
-              }
-            }}
+            placeholder="New file name"
           />
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setEditFileId(null);
-                setEditName("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleEdit} disabled={!editName.trim()}>
-              Save
-            </Button>
+            <Button onClick={handleEdit}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
-        setDialogOpen(open);
-        if (!open) setPreviewImageSrc(null);
-      }}>
-        <DialogContent className="size-auto min-w-fit max-w-[90vw] max-h-[90vh] p-0 bg-transparent flex items-center justify-center border-none [&>button]:bg-white">
-          <DialogTitle className="sr-only">Image Preview</DialogTitle>
-          {previewImageSrc && (
-            <img
-              src={previewImageSrc}
-              alt="Preview"
-              className="size-auto max-w-[90vw] max-h-[80vh] block rounded-xl shadow-[0_2px_16px_rgba(0,0,0,0.2)]"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {previewImageSrc && (
+        <Dialog open={!!previewImageSrc} onOpenChange={() => setPreviewImageSrc(null)}>
+          <DialogContent className="w-full h-auto p-0 overflow-hidden" >
+            <img src={previewImageSrc} alt="Preview" className="w-[1920px] h-auto" />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

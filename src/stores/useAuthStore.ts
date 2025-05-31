@@ -1,5 +1,3 @@
-'use client';
-
 import { create } from 'zustand';
 import { createClient } from '@/lib/supabase/client';
 import type { UserModel, ValidRole } from '@/types/UserModel';
@@ -13,7 +11,6 @@ type AuthState = {
   signOut: () => Promise<void>;
   checkAuth: () => Promise<void>;
 };
-
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -42,11 +39,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
 
-   
-
     const userId = sessionData.user.id;
-
-
 
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
@@ -65,8 +58,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
 
-
-
     const userModel: UserModel = {
       id: userId,
       name: profileData.full_name || sessionData.user.user_metadata?.full_name || 'Unknown',
@@ -74,8 +65,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       avatar: profileData.avatar_url || sessionData.user.user_metadata?.avatar_url || '',
       role: profileData.role.role_name as ValidRole,
     };
-    
-
 
     set({
       user: userModel,
@@ -108,18 +97,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-
-      const updatedUser : UserModel = {
+      const updatedUser: UserModel = {
         id: session.user.id,
         name: updatedProfile.full_name || session.user.user_metadata?.full_name || 'Unknown',
         email: updatedProfile.email || session.user.email || '',
         avatar: updatedProfile.avatar_url || session.user.user_metadata?.avatar_url || '',
-        role: updatedProfile.role.role_name,
+        role: updatedProfile.role.role_name as ValidRole,
       };
 
-
       set({
-        // user: updatedUser,
+        user: updatedUser,
         isLoading: false,
         logoUrl: updatedUser.avatar,
       });
