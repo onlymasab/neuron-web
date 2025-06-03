@@ -93,7 +93,7 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
     >
       <div className="relative w-full">
         <div
-          className="flex w-full overflow-x-scroll overscroll-x-auto scroll-smooth [scrollbar-width:none] md:pb-10"
+          className="flex w-full overflow-x-scroll overscroll-x-auto scroll-smooth [scrollbar-width:none] pb-[4vh]"
           ref={carouselRef}
           onScroll={checkScrollability}
         >
@@ -135,18 +135,18 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
         </div>
         <div className="mr-10 flex justify-end gap-2">
           <button
-            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 disabled:opacity-50"
+            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 disabled:opacity-50"
             onClick={scrollLeft}
             disabled={!canScrollLeft}
           >
-            <IconArrowNarrowLeft className="h-6 w-6 text-gray-500" />
+            <IconArrowNarrowLeft className="h-6 w-6 text-black/70" />
           </button>
           <button
-            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 disabled:opacity-50"
+            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 disabled:opacity-50"
             onClick={scrollRight}
             disabled={!canScrollRight}
           >
-            <IconArrowNarrowRight className="h-6 w-6 text-gray-500" />
+            <IconArrowNarrowRight className="h-6 w-6 text-black/70" />
           </button>
         </div>
       </div>
@@ -212,26 +212,33 @@ export const Card = ({
               exit={{ opacity: 0 }}
               ref={containerRef}
               layoutId={layout ? `card-${card.id}` : undefined}
-              className="relative z-[60] mx-auto my-10 h-fit max-w-5xl rounded-3xl bg-white p-4 font-sans md:p-10 dark:bg-neutral-900"
+              className="relative z-[60] mx-auto top-[50%] -translate-y-1/2 h-fit w-fit rounded-3xl bg-white p-[3vh] space-y-5 font-sans dark:bg-neutral-900"
             >
-              <button
-                className="sticky top-4 right-0 ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-black dark:bg-white"
-                onClick={handleClose}
-              >
-                <IconX className="h-6 w-6 text-neutral-100 dark:text-neutral-900" />
-              </button>
-              <motion.p
-                layoutId={layout ? `category-${card.id}` : undefined}
-                className="text-base font-medium text-black dark:text-white"
-              >
-                {card.throwback}
-              </motion.p>
-              <Image 
-              width={100}
-              height={100}
-              src={card.src}
-              alt={card.id}
-              className="w-full h-vh object-fit"
+              <div className="flex items-center justify-between flex-row-reverse">
+                <button
+                  className="sticky top-4 right-0 ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-black dark:bg-white"
+                  onClick={handleClose}
+                >
+                  <IconX className="h-6 w-6 text-neutral-100 dark:text-neutral-900" />
+                </button>
+                <motion.p
+                  layoutId={layout ? `category-${card.id}` : undefined}
+                  className="text-base font-medium text-black dark:text-white"
+                >
+                  {card.throwback}
+                </motion.p>
+              </div>
+              {/* <Image
+                width={200}
+                height={100}
+                src={card.src}
+                alt={card.id}
+                className="border-2 border-black size-auto max-w-[90vw] max-h-[80vh] object-fit"
+              /> */}
+              <img
+                src={card.src}
+                alt={card.id}
+                className="size-auto max-w-[90vw] max-h-[80vh] block rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
               />
             </motion.div>
           </div>
@@ -240,10 +247,10 @@ export const Card = ({
       <motion.button
         layoutId={layout ? `card-${card.throwback}` : undefined}
         onClick={handleOpen}
-        className="relative z-10 flex h-80 w-56 flex-col items-start justify-start overflow-hidden rounded-3xl bg-gray-100 md:h-[40rem] md:w-96 dark:bg-neutral-900"
+        className="relative z-10 flex h-[40vh] w-[25vw] flex-col items-start justify-start overflow-hidden rounded-3xl bg-gray-100 dark:bg-neutral-900"
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 h-full bg-gradient-to-b from-black/50 via-transparent to-transparent" />
-        <div className="relative z-40 p-8">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 h-full bg-black/30" />
+        <div className="relative z-40 p-6">
           <motion.p
             layoutId={layout ? `category-${card.throwback}` : undefined}
             className="text-left font-sans text-sm font-medium text-white md:text-base"

@@ -134,7 +134,7 @@ const PhotosPage = () => {
         break;
     }
 
-    toast.info(`Starting ${conversionName}...`);
+    // toast.info(`Starting ${conversionName}...`);
     setAnimationSrc(animationVideo);
     setSelectedImageSrc(src);
     setShowConversionModal(true);
@@ -151,7 +151,7 @@ const PhotosPage = () => {
 
       setTimeout(() => {
         setProgress(100);
-        toast.success(`${conversionName} completed successfully!`);
+        // toast.success(`${conversionName} completed successfully!`);
         setTimeout(() => {
           setShowAnimation(false);
           setShowConversionModal(false);
@@ -221,16 +221,16 @@ const PhotosPage = () => {
   };
 
   return (
-    <div className="flex flex-col px-4 md:px-8 lg:px-12 py-6 bg-gray-50 min-h-screen">
-      <header className="mb-8">
+    <div className="flex flex-col px-4 md:px-8 lg:px-12 py-6 bg-[#ebf2fd] min-h-screen">
+      <header className="mb-[4vh]">
         <h1 className="text-3xl font-bold text-gray-900">Photos</h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-gray-600 mt-2 text-sm">
           {recentImages.length} memories stored securely
         </p>
       </header>
 
       <Tabs defaultValue="gallery" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-3 bg-gray-100 p-1 rounded-lg">
+        <TabsList className="grid w-full max-w-md grid-cols-3 bg-transparent p-1">
           {[
             { value: "gallery", label: "Gallery" },
             { value: "album", label: "Albums" },
@@ -239,17 +239,17 @@ const PhotosPage = () => {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary py-2 rounded-md transition-all"
+              className="relative rounded-md px-4 py-2 text-[clamp(1rem,1.5vw,1.5rem)]/5 font-semibold cursor-pointer data-[state=active]:bg-[linear-gradient(93deg,_#0D6AFF_4.18%,_#0956D3_78.6%)] data-[state=active]:text-white transition-all data-[state=active]:shadow-none"
             >
               {tab.label}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        <TabsContent value="gallery" className="mt-6">
+        <TabsContent value="gallery" className="mt-[3vh]">
           <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-800">All Photos</h2>
+              <h2 className="text-lg font-semibold text-gray-800">All Photos</h2>
               <div className="text-sm text-gray-500">
                 Sorted by recent
               </div>

@@ -26,7 +26,7 @@ export default function CloudLayout({
     return (
         <div className="grid grid-cols-12 grid-rows-12 h-screen bg-[#ebf2fd]">
 
-            <div className="col-span-12">
+            <div className="col-span-12 row-span-1">
                 {/* Header Slot */}
                 {header}
             </div>

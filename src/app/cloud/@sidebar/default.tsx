@@ -106,7 +106,7 @@ const SidebarLink = ({
       href={item.href}
       className={`flex items-center h-[6vh] gap-4 text-sm font-medium transition ${
         isActive
-          ? "pl-3 border-l-4 border-blue-600 bg-[#f5f9fc] text-blue-600"
+          ? "pl-5 border-l-4 border-blue-600 bg-[#f5f9fc] text-blue-600"
           : "pl-6 text-gray-700 hover:bg-[#f0f5fc]"
       }`}
     >
