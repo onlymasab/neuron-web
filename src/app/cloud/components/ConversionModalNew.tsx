@@ -1,11 +1,11 @@
 import { Progress } from '@/components/ui/progress';
 import Lottie from 'lottie-react';
 import tickAnimation from '../lotties/tick.json';
-import usbAnimation from '../lotties/tick.json';
-import completedAnimation from '../lotties/tick.json';
+import usbAnimation from '../lotties/tick.json'; // Add this animation
+import completedAnimation from '../lotties/tick.json'; // Add this animation
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Shield, Database, Lock, Globe, Check, Cpu, Dna, Network, Download } from 'lucide-react';
+import { X, Sparkles, Shield, Database, Lock, Check, Cpu, Dna, Network, Download, Usb } from 'lucide-react';
 import { useEffect, useState, useCallback, useRef, JSX } from 'react';
 import Confetti from 'react-confetti';
 import Particles from '@tsparticles/react';
@@ -18,10 +18,8 @@ interface ConversionModalProps {
   showAnimation?: boolean;
   onClose?: () => void;
   onCancel?: () => void;
-  conversionType?: 'dna' | 'graphene' | 'brain';
-  onGenerateUSB?: () => Promise<void>;
-  animationClass?: string;
-  estimatedTime?: number;
+  conversionType: 'dna' | 'graphene' | 'brain';
+  onGenerateUSB?: () => Promise<void>; // Add callback for USB generation
 }
 
 interface ProgressStage {
@@ -32,58 +30,7 @@ interface ProgressStage {
   details: string[];
 }
 
-const getProgressStage = (progress: number, type: 'dna' | 'graphene' | 'brain' | undefined): ProgressStage => {
-  if (!type) {
-    // Fallback for when conversionType is not provided (original behavior)
-    if (progress < 20)
-      return {
-        stage: 'Initializing Scan',
-        icon: <Sparkles className="text-cyan-400 w-6 h-6" />,
-        subTask: 'Scanning nodes',
-        description: 'Analyzing your data structure',
-        details: ['Scanning data points', 'Initializing nodes', 'Preparing for processing'],
-      };
-    if (progress < 40)
-      return {
-        stage: 'Validating Data',
-        icon: <Database className="text-blue-400 w-6 h-6" />,
-        subTask: 'Verifying integrity',
-        description: 'Ensuring data meets standards',
-        details: ['Checking data consistency', 'Validating formats', 'Correcting errors'],
-      };
-    if (progress < 60)
-      return {
-        stage: 'Encrypting',
-        icon: <Lock className="text-purple-400 w-6 h-6" />,
-        subTask: 'Applying encryption',
-        description: 'Securing with AES-256',
-        details: ['Generating encryption keys', 'Encrypting data blocks', 'Verifying encryption'],
-      };
-    if (progress < 80)
-      return {
-        stage: 'Storing in Synthis',
-        icon: <Shield className="text-teal-400 w-6 h-6" />,
-        subTask: 'Uploading to vault',
-        description: 'Distributing globally',
-        details: ['Sharding data', 'Uploading to network', 'Ensuring redundancy'],
-      };
-    if (progress < 100)
-      return {
-        stage: 'Network Sync',
-        icon: <Globe className="text-emerald-400 w-6 h-6" />,
-        subTask: 'Linking network',
-        description: 'Connecting decentralized nodes',
-        details: ['Syncing with global nodes', 'Verifying connections', 'Finalizing sync'],
-      };
-    return {
-      stage: 'Finalizing',
-      icon: <Check className="text-green-400 w-6 h-6" />,
-      subTask: 'Completing process',
-      description: 'Final checks',
-      details: ['Running final validations', 'Generating report', 'Archiving data'],
-    };
-  }
-
+const getProgressStage = (progress: number, type: 'dna' | 'graphene' | 'brain'): ProgressStage => {
   const stages: Record<'dna' | 'graphene' | 'brain', ProgressStage[]> = {
     dna: [
       {
@@ -219,6 +166,8 @@ const getProgressStage = (progress: number, type: 'dna' | 'graphene' | 'brain' |
     ],
   };
 
+   
+  // Fallback stage for invalid type or unexpected progress values
   const fallbackStage: ProgressStage = {
     stage: 'Processing Error',
     icon: <X className="text-red-500 w-6 h-6" />,
@@ -227,66 +176,30 @@ const getProgressStage = (progress: number, type: 'dna' | 'graphene' | 'brain' |
     details: ['Please check the conversion parameters.', 'Contact support if the issue persists.'],
   };
 
-  if (type && !(type in stages)) {
+  // Validate conversion type
+  if (!(type in stages)) {
     console.error(`Invalid conversion type: ${type}. Expected 'dna', 'graphene', or 'brain'.`);
     return fallbackStage;
   }
 
-  if (!type) {
-    const stageIndex = Math.floor(progress / 20);
-    const defaultStages = [
-      {
-        stage: 'Initializing Scan',
-        icon: <Sparkles className="text-cyan-400 w-6 h-6" />,
-        subTask: 'Scanning nodes',
-        description: 'Analyzing your data structure',
-        details: ['Scanning data points', 'Initializing nodes', 'Preparing for processing'],
-      },
-      {
-        stage: 'Validating Data',
-        icon: <Database className="text-blue-400 w-6 h-6" />,
-        subTask: 'Verifying integrity',
-        description: 'Ensuring data meets standards',
-        details: ['Checking data consistency', 'Validating formats', 'Correcting errors'],
-      },
-      {
-        stage: 'Encrypting',
-        icon: <Lock className="text-purple-400 w-6 h-6" />,
-        subTask: 'Applying encryption',
-        description: 'Securing with AES-256',
-        details: ['Generating encryption keys', 'Encrypting data blocks', 'Verifying encryption'],
-      },
-      {
-        stage: 'Storing in Synthis',
-        icon: <Shield className="text-teal-400 w-6 h-6" />,
-        subTask: 'Uploading to vault',
-        description: 'Distributing globally',
-        details: ['Sharding data', 'Uploading to network', 'Ensuring redundancy'],
-      },
-      {
-        stage: 'Network Sync',
-        icon: <Globe className="text-emerald-400 w-6 h-6" />,
-        subTask: 'Linking network',
-        description: 'Connecting decentralized nodes',
-        details: ['Syncing with global nodes', 'Verifying connections', 'Finalizing sync'],
-      },
-      {
-        stage: 'Finalizing',
-        icon: <Check className="text-green-400 w-6 h-6" />,
-        subTask: 'Completing process',
-        description: 'Final checks',
-        details: ['Running final validations', 'Generating report', 'Archiving data'],
-      },
-    ];
-    return stageIndex >= 0 && stageIndex < defaultStages.length ? defaultStages[stageIndex] : defaultStages[defaultStages.length - 1];
+  // Determine current stage based on progress
+  // Progress thresholds: 0-19, 20-39, 40-59, 60-79, 80-99, 100
+  const stageIndex = Math.floor(progress / 20);
+  
+  // Ensure stageIndex is within bounds of the specific type's stages array
+  const currentStagesForType = stages[type];
+  if (stageIndex >= 0 && stageIndex < currentStagesForType.length) {
+    return currentStagesForType[stageIndex];
+  }
+  
+  // If progress is 100 or more, return the last stage
+  if (progress >= 100) {
+    return currentStagesForType[currentStagesForType.length - 1];
   }
 
-  const stageIndex = Math.floor(progress / 20);
-  const currentStages = stages[type];
-  if (stageIndex >= 0 && stageIndex < currentStages.length) {
-    return currentStages[stageIndex];
-  }
-  return progress >= 100 ? currentStages[currentStages.length - 1] : fallbackStage;
+  // Fallback if stageIndex is out of expected range (e.g. negative progress)
+  console.warn(`Progress value ${progress} resulted in an unexpected stageIndex: ${stageIndex} for type ${type}.`);
+  return fallbackStage; 
 };
 
 const ConversionModal = ({
@@ -296,9 +209,7 @@ const ConversionModal = ({
   onClose,
   onCancel,
   conversionType,
-  onGenerateUSB,
-  animationClass = '',
-  estimatedTime = 240,
+  onGenerateUSB
 }: ConversionModalProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [isParticlesLoaded, setIsParticlesLoaded] = useState(false);
@@ -306,263 +217,312 @@ const ConversionModal = ({
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [internalProgress, setInternalProgress] = useState(externalProgressBar !== undefined ? externalProgressBar : 0);
   const [showAnimation, setShowAnimation] = useState(externalShowAnimation);
-  const [timeRemaining, setTimeRemaining] = useState(estimatedTime);
+  const [timeRemaining, setTimeRemaining] = useState(240);
   const [usbGenerating, setUsbGenerating] = useState(false);
   const [usbGenerated, setUsbGenerated] = useState(false);
   const [showCompletionSequence, setShowCompletionSequence] = useState(false);
+
   const { stage, icon, subTask, description, details } = getProgressStage(internalProgress, conversionType);
+
   const doneButtonRef = useRef<HTMLButtonElement>(null);
   const usbButtonRef = useRef<HTMLButtonElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeRemainingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Respect prefers-reduced-motion
+  // ... (keep your existing useEffect hooks) ...
+
+  // Enhanced completion handler
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const handleChange = () => {
-      if (mediaQuery.matches) {
-        setShowAnimation(false);
-      } else {
-        setShowAnimation(externalShowAnimation);
-      }
-    };
-    handleChange();
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    if (internalProgress >= 100) {
+      setShowAnimation(false);
+      
+      // Start completion sequence
+      setShowCompletionSequence(true);
+      
+      // Show confetti after a slight delay
+      const confettiTimer = setTimeout(() => {
+        setShowConfetti(true);
+      }, 500);
+
+      // Hide confetti after 5 seconds
+      const hideConfettiTimer = setTimeout(() => {
+        setShowConfetti(false);
+      }, 6000);
+
+      return () => {
+        clearTimeout(confettiTimer);
+        clearTimeout(hideConfettiTimer);
+      };
+    }
+  }, [internalProgress]);
+
+  // Handle USB generation
+  const handleGenerateUSB = async () => {
+    if (!onGenerateUSB) return;
+    
+    setUsbGenerating(true);
+    try {
+      await onGenerateUSB();
+      setUsbGenerated(true);
+      
+      // Auto-focus the done button after generation
+      setTimeout(() => {
+        doneButtonRef.current?.focus();
+      }, 300);
+    } catch (error) {
+      console.error("USB generation failed:", error);
+    } finally {
+      setUsbGenerating(false);
+    }
+  };
+
+  
+  // Log for debugging conversionType on mount and change
+  useEffect(() => {
+    console.log('ConversionModal mounted/updated. Type:', conversionType, "Initial Progress:", internalProgress, "Show Animation:", showAnimation);
+  }, [conversionType, internalProgress, showAnimation]);
+
+  // Sync internal state with external props
+  useEffect(() => {
+    setShowAnimation(externalShowAnimation);
   }, [externalShowAnimation]);
 
-  // Sync internal progress with externalProgressBar
   useEffect(() => {
     if (externalProgressBar !== undefined) {
       setInternalProgress(externalProgressBar);
     }
   }, [externalProgressBar]);
 
-  // Simulate progress animation
+
+  // Respect prefers-reduced-motion: if user prefers reduced motion, disable animations
   useEffect(() => {
-    if (!showAnimation || externalProgressBar !== undefined) {
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-      if (timeRemainingIntervalRef.current) clearInterval(timeRemainingIntervalRef.current);
-      return;
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = () => {
+      if (mediaQuery.matches) {
+        setShowAnimation(false); // Turn off animation if user prefers reduced motion
+        // setShowConfetti(false); // Also consider turning off confetti
+      } else {
+        setShowAnimation(externalShowAnimation); // Re-enable if prop allows
+      }
+    };
+    handleChange(); // Initial check
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [externalShowAnimation]);
+
+
+  // Progress simulation and time remaining countdown
+  useEffect(() => {
+    // Clear any existing intervals first
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    if (timeRemainingIntervalRef.current) clearInterval(timeRemainingIntervalRef.current);
+
+    // Only run if animation is shown and no external progress bar is controlling
+    if (showAnimation && externalProgressBar === undefined) {
+      const totalDurationMs = 240 * 1000; // 4 minutes in milliseconds
+      const updateIntervalMs = 100; // Update progress more frequently for smoother UI
+      const increment = (100 / totalDurationMs) * updateIntervalMs;
+
+      setInternalProgress(0); // Reset progress if internally managed
+      setTimeRemaining(totalDurationMs / 1000); // Reset time
+
+      progressIntervalRef.current = setInterval(() => {
+        setInternalProgress(prev => {
+          const newProgress = prev + increment;
+          if (newProgress >= 100) {
+            if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+           setShowAnimation(false); // This is handled by the completion effect
+            return 100;
+          }
+          return newProgress;
+        });
+      }, updateIntervalMs);
+
+      timeRemainingIntervalRef.current = setInterval(() => {
+        setTimeRemaining(prev => {
+          const newTime = prev - (updateIntervalMs / 1000);
+          if (newTime <= 0) {
+            if (timeRemainingIntervalRef.current) clearInterval(timeRemainingIntervalRef.current);
+            return 0;
+          }
+          return newTime;
+        });
+      }, updateIntervalMs);
+    } else if (!showAnimation && externalProgressBar === undefined) {
+        // If animation is off and internally managed, set to 100% or initial state
+        setInternalProgress(prev => prev < 100 ? 0 : 100); // Or some other logic
+        setTimeRemaining(0);
     }
 
-    const totalDurationMs = estimatedTime * 1000;
-    const updateIntervalMs = 100;
-    const increment = (100 / totalDurationMs) * updateIntervalMs;
 
-    setInternalProgress(0);
-    setTimeRemaining(estimatedTime);
-
-    progressIntervalRef.current = setInterval(() => {
-      setInternalProgress((prev) => {
-        const newProgress = prev + increment;
-        if (newProgress >= 100) {
-          clearInterval(progressIntervalRef.current!);
-          setShowAnimation(false);
-          return 100;
-        }
-        return newProgress;
-      });
-    }, updateIntervalMs);
-
-    timeRemainingIntervalRef.current = setInterval(() => {
-      setTimeRemaining((prev) => {
-        const newTime = prev - updateIntervalMs / 1000;
-        if (newTime <= 0) {
-          clearInterval(timeRemainingIntervalRef.current!);
-          return 0;
-        }
-        return newTime;
-      });
-    }, updateIntervalMs);
-
-    return () => {
+    return () => { // Cleanup intervals on unmount or dependency change
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       if (timeRemainingIntervalRef.current) clearInterval(timeRemainingIntervalRef.current);
     };
-  }, [showAnimation, externalProgressBar, estimatedTime]);
+  }, [showAnimation, externalProgressBar]); // Rerun if showAnimation or externalProgressBar presence changes
 
-  // Completion sequence and confetti
+
+  // Handle completion effects (confetti, focus)
   useEffect(() => {
     if (internalProgress >= 100) {
-      setShowAnimation(false);
-      setShowCompletionSequence(true);
-      const confettiTimer = setTimeout(() => setShowConfetti(true), 500);
-      const hideConfettiTimer = setTimeout(() => setShowConfetti(false), 7000);
-      const focusTimer = setTimeout(() => {
-        if (usbGenerated) {
-          doneButtonRef.current?.focus();
-        } else if (onGenerateUSB) {
-          usbButtonRef.current?.focus();
-        } else {
-          doneButtonRef.current?.focus();
-        }
+      setShowAnimation(false); // Ensure animation stops
+      setShowConfetti(true);
+      const confettiTimer = setTimeout(() => setShowConfetti(false), 7000); // Confetti for 7 seconds
+      
+      // Focus the "Done" button for accessibility
+      const focusTimer = setTimeout(() => { // Add a slight delay for elements to render
+        doneButtonRef.current?.focus();
       }, 100);
 
       return () => {
         clearTimeout(confettiTimer);
-        clearTimeout(hideConfettiTimer);
         clearTimeout(focusTimer);
       };
     }
-  }, [internalProgress, usbGenerated, onGenerateUSB]);
+  }, [internalProgress]);
 
-  // Particle initialization
+
+
+
+
+  // Particle system initialization
   const particlesInit = useCallback(async (engine: Engine) => {
     try {
-      await loadSlim(engine);
+      await loadSlim(engine); // Loads the slim version of tsparticles
       setIsParticlesLoaded(true);
+      console.log('Particles initialized successfully');
     } catch (error) {
       console.error('Failed to initialize particles:', error);
+      setIsParticlesLoaded(false); // Ensure state reflects failure
     }
-  }, []);
+  }, []); // Empty dependency array, this function doesn't change
 
+  // Particle system options - memoize for performance
   const particlesOptions: ISourceOptions = {
-    fpsLimit: 60,
+    fpsLimit: 60, // Cap FPS for performance
     particles: {
-      number: { value: 40, density: { enable: true, value_area: 800 } },
+      number: { value: 40, density: { enable: true, value_area: 800 } }, // Reduced number
       color: { value: ['#06b6d4', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'] },
-      shape: { type: ['circle', 'triangle'] },
-      opacity: { value: { min: 0.3, max: 0.7 }, animation: { enable: true, speed: 0.5, minimumValue: 0.1 } },
-      size: { value: { min: 1, max: 3 }, animation: { enable: true, speed: 2, minimumValue: 0.5 } },
+      shape: { type: ['circle', 'triangle'] }, // Simpler shapes
+      opacity: { value: {min: 0.3, max: 0.7}, animation: { enable: true, speed: 0.5, minimumValue: 0.1, sync: false } },
+      size: { value: { min: 1, max: 3 }, animation: { enable: true, speed: 2, minimumValue: 0.5, sync: false } },
       move: {
         enable: true,
-        speed: { min: 0.5, max: 1.5 },
+        speed: { min: 0.5, max: 1.5 }, // Slower speed
         direction: 'none',
         random: true,
         straight: false,
         outModes: { default: 'out' },
-        trail: { enable: true, length: 5, fillColor: '#111827' },
+        trail: { // Subtle trail effect
+          enable: true,
+          length: 5,
+          fillColor: '#111827', // Dark trail
+        },
       },
     },
     interactivity: {
       events: {
-        onHover: { enable: true, mode: 'repulse' },
-        onClick: { enable: true, mode: 'push' },
+        onHover: { enable: true, mode: 'repulse' }, // Repulse on hover
+        onClick: { enable: true, mode: 'push' }, // Push on click
       },
       modes: {
         repulse: { distance: 80, duration: 0.4 },
-        push: { quantity: 2 },
+        push: { quantity: 2 }, // Push fewer particles
       },
     },
-    detectRetina: true,
-    background: { color: 'transparent' },
+    detectRetina: true, // For high-DPI displays
+    background: {
+      color: 'transparent', // Make background transparent
+    }
   };
 
+  // Dynamically set progress bar color based on percentage
   const progressColor = () => {
-    if (internalProgress < 30) return 'bg-cyan-500';
-    if (internalProgress < 60) return 'bg-blue-500';
-    if (internalProgress < 90) return 'bg-purple-500';
-    return 'bg-green-500';
+    if (internalProgress < 30) return 'bg-cyan-500'; // Tailwind class for cyan
+    if (internalProgress < 60) return 'bg-blue-500'; // Tailwind class for blue
+    if (internalProgress < 90) return 'bg-purple-500'; // Tailwind class for purple
+    return 'bg-green-500'; // Tailwind class for green
   };
 
+  // Format time from seconds to MM:SS
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleGenerateUSB = async () => {
-    if (!onGenerateUSB) return;
-    setUsbGenerating(true);
-    try {
-      await onGenerateUSB();
-      setUsbGenerated(true);
-      setTimeout(() => doneButtonRef.current?.focus(), 300);
-    } catch (error) {
-      console.error('USB generation failed:', error);
-    } finally {
-      setUsbGenerating(false);
-    }
-  };
-
+  // Handler for the "Done" button
   const handleDoneClick = () => {
-    onClose?.();
+    if (onClose) onClose();
   };
 
+  // Handler for the "Cancel" button
   const handleCancelClick = () => {
-    onCancel?.() ?? onClose?.();
+    if (onCancel) onCancel();
+    else if (onClose) onClose(); // Fallback to onClose if no specific onCancel
   };
 
+  // Video error handler
   const handleVideoError = () => {
     setVideoError(true);
-    setVideoLoaded(false);
-  };
+    setVideoLoaded(false); // Ensure loader is not shown if video fails
+    console.error("Video loading error for src:", videoSrc);
+  }
 
+  // Video loaded data handler
   const handleVideoLoaded = () => {
     setVideoLoaded(true);
     setVideoError(false);
-  };
+  }
 
   return (
-    <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/95 backdrop-blur-md p-4 ${animationClass}`}
-      role="dialog"
-      aria-labelledby="conversion-modal-title"
-      aria-modal="true"
-    >
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-950/80 backdrop-blur-md p-4">
       <AnimatePresence mode="wait">
         {showAnimation ? (
           <motion.div
-            key="progress"
+            key="progress-view"
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'circOut' }}
-            className="relative w-full max-w-3xl mx-auto p-6 sm:p-8 rounded-2xl bg-gray-800/90 border border-gray-700 shadow-2xl overflow-hidden"
+            className="relative w-full max-w-3xl mx-auto p-6 sm:p-8 rounded-xl bg-gray-800 border border-gray-700 shadow-2xl overflow-hidden"
           >
-            {/* Background Elements */}
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-800/80" />
-              <div className="absolute inset-0 opacity-10">
-                <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                  <pattern id="grid-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" />
-                  </pattern>
-                  <rect width="100%" height="100%" fill="url(#grid-pattern)" />
-                </svg>
-              </div>
-              {isParticlesLoaded && (
-                <Particles
-                  id="tsparticles-progress"
-                  init={particlesInit}
-                  options={particlesOptions}
-                  className="absolute inset-0 opacity-20"
-                />
-              )}
-            </div>
+            {/* Particle Background - only if loaded */}
+            {isParticlesLoaded && (
+              <Particles
+                id="tsparticles-progress"
+                init={particlesInit} // Use init prop
+                options={particlesOptions}
+                className="absolute inset-0 z-0 opacity-20" // Ensure particles are behind content
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 to-gray-800/30 z-[-1]" />
 
-            {/* Content */}
+
+            {/* Content Wrapper */}
             <div className="relative z-10 flex flex-col space-y-6">
-              {/* Header */}
+              {/* Header with Icon, Title, and Cancel Button */}
               <div className="flex justify-between items-start">
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="flex items-center space-x-3"
-                >
+                <div className="flex items-center space-x-3">
                   <motion.div
                     animate={{ rotate: [0, 15, -10, 5, 0, 360] }}
-                    transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+                    transition={{ duration: 15, repeat: Infinity, ease: 'linear', delay: Math.random() }}
                     className="p-2.5 rounded-full bg-gray-700/60 backdrop-blur-sm shadow-md"
                   >
-                    {icon}
+                    {icon} {/* Icon from getProgressStage */}
                   </motion.div>
                   <div>
-                    <h2 id="conversion-modal-title" className="text-xl sm:text-2xl font-semibold text-gray-200">
-                      {stage}
-                    </h2>
-                    <p className="text-sm text-gray-400">{subTask}</p>
+                    <h2 id="conversion-modal-title" className="text-xl sm:text-2xl font-semibold text-gray-100">{stage}</h2>
+                    <p className="text-xs sm:text-sm text-gray-400">{subTask}</p>
                   </div>
-                </motion.div>
+                </div>
                 {onCancel && (
                   <motion.button
-                    whileHover={{ scale: 1.1, backgroundColor: 'rgba(75, 85, 99, 0.7)' }}
+                    whileHover={{ scale: 1.1, backgroundColor: 'rgba(75, 85, 99, 0.7)' }} // bg-gray-600/70
                     whileTap={{ scale: 0.95 }}
                     onClick={handleCancelClick}
-                    className="p-1.5 rounded-full text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-colors"
+                    className="p-1.5 rounded-full text-gray-400 hover:text-gray-100 transition-colors"
                     aria-label="Cancel conversion"
                   >
                     <X size={20} />
@@ -570,7 +530,7 @@ const ConversionModal = ({
                 )}
               </div>
 
-              {/* Video Player */}
+              {/* Video Player Section */}
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -580,8 +540,8 @@ const ConversionModal = ({
                 {!videoLoaded && !videoError && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-900/70">
                     <div className="flex flex-col items-center space-y-2">
-                      <div className="w-8 h-8 border-2 border-t-transparent border-cyan-400 rounded-full animate-spin" />
-                      <p className="text-gray-400 text-sm">Loading visualization...</p>
+                        <div className="w-8 h-8 border-2 border-t-transparent border-cyan-400 rounded-full animate-spin"></div>
+                        <p className="text-gray-400 text-sm">Loading visualization...</p>
                     </div>
                   </div>
                 )}
@@ -591,38 +551,36 @@ const ConversionModal = ({
                   autoPlay
                   loop
                   muted
-                  playsInline
+                  playsInline // Important for iOS
                   className={`w-full h-full object-cover transition-opacity duration-500 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
                   onError={handleVideoError}
                   onLoadedData={handleVideoLoaded}
-                  onCanPlay={() => videoRef.current?.play().catch((e) => console.warn('Autoplay prevented:', e))}
+                  onCanPlay={() => videoRef.current?.play().catch(e => console.warn("Autoplay prevented:", e))}
                 />
                 {videoError && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-red-400 p-4 text-center">
-                    <X size={24} className="mr-2" /> Unable to load visualization.
+                    <X size={24} className="mr-2"/> Unable to load visualization.
                   </div>
                 )}
-                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-800/80 to-transparent pointer-events-none" />
+                {/* Subtle gradient overlay at the bottom of the video */}
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-800/80 via-gray-800/40 to-transparent pointer-events-none" />
               </motion.div>
 
-              {/* Progress Bar */}
+              {/* Progress Bar and Details */}
               <div className="space-y-3">
                 <div className="flex justify-between items-baseline text-sm">
                   <span className="font-medium text-gray-200">Overall Progress</span>
                   <span className="font-mono text-cyan-400 text-lg">{internalProgress.toFixed(0)}%</span>
                 </div>
-                <motion.div
-                  initial={{ scaleX: 0.95, opacity: 0.8 }}
-                  animate={{ scaleX: 1, opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <Progress
-                    value={internalProgress}
-                    className="h-2.5 bg-gray-700/50"
-                    indicatorClassName={`${progressColor()} transition-all duration-300`}
-                  />
-                </motion.div>
-                <div className="flex justify-between text-xs text-gray-500">
+                <div className="w-full bg-gray-700/70 rounded-full h-2.5 overflow-hidden">
+                    <motion.div
+                        className={`h-2.5 rounded-full ${progressColor()}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${internalProgress}%` }}
+                        transition={{ duration: 0.3, ease: "linear" }} // Smoother transition for progress
+                    />
+                </div>
+                <div className="flex justify-between text-xs text-gray-400">
                   <span>{description}</span>
                   {externalProgressBar === undefined && <span>ETA: {formatTime(timeRemaining)}</span>}
                 </div>
@@ -633,7 +591,7 @@ const ConversionModal = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.3 }}
-                className="bg-gray-700/40 rounded-md p-4 max-h-32 overflow-y-auto"
+                className="bg-gray-700/40 rounded-md p-4 max-h-32 overflow-y-auto custom-scrollbar" // Max height and scroll
               >
                 <h3 className="text-xs font-semibold text-gray-300 mb-2 uppercase tracking-wider">Current Operations:</h3>
                 <ul className="space-y-1.5">
@@ -655,49 +613,19 @@ const ConversionModal = ({
                   ))}
                 </ul>
               </motion.div>
-
-              {/* Stage Visualization */}
-              <div className="relative pt-2">
-                <div className="absolute top-0 left-0 h-1 w-full bg-gray-700/50 rounded-full" />
-                <div className="flex justify-between relative z-10">
-                  {[0, 20, 40, 60, 80, 100].map((point) => (
-                    <motion.div
-                      key={point}
-                      initial={{ scale: 0.8 }}
-                      animate={{
-                        scale: internalProgress >= point ? 1.1 : 0.9,
-                        backgroundColor: internalProgress >= point ? progressColor() : 'rgba(55, 65, 81, 0.5)',
-                      }}
-                      transition={{ type: 'spring', stiffness: 500 }}
-                      className={`w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center ${
-                        internalProgress >= point ? 'shadow-md' : ''
-                      }`}
-                    >
-                      {internalProgress >= point && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.2 }}
-                        >
-                          <Check size={12} className="text-white" />
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
             </div>
           </motion.div>
         ) : showCompletionSequence ? (
+          // Enhanced Success View with completion sequence
           <motion.div
-            key="success"
+            key="success-view"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.4, ease: 'circOut' }}
-            className="relative w-full max-w-md mx-auto p-8 sm:p-10 rounded-2xl bg-gray-800/90 border border-green-500/30 shadow-2xl overflow-hidden text-center"
+            className="relative w-full max-w-md mx-auto p-8 sm:p-10 rounded-xl bg-gray-800 border border-green-500/30 shadow-2xl overflow-hidden text-center"
           >
-            {/* Confetti */}
+            {/* Confetti Effect */}
             {showConfetti && (
               <Confetti
                 width={window.innerWidth}
@@ -712,28 +640,28 @@ const ConversionModal = ({
               />
             )}
 
-            {/* Background Elements */}
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-800/80" />
-              {isParticlesLoaded && (
-                <Particles
-                  id="tsparticles-success"
-                  init={particlesInit}
-                  options={{
-                    ...particlesOptions,
-                    particles: {
-                      ...particlesOptions.particles,
-                      number: { value: 60 },
-                      move: { speed: { min: 0.8, max: 2 } },
-                      color: { value: ['#10b981', '#06b6d4'] },
-                    },
-                  }}
-                  className="absolute inset-0 opacity-30"
-                />
-              )}
-            </div>
+            {/* Particle Background */}
+            {isParticlesLoaded && (
+              <Particles
+                id="tsparticles-success"
+                init={particlesInit}
+                options={{
+                  ...particlesOptions,
+                  particles: {
+                    ...particlesOptions.particles,
+                    number: { value: 80 },
+                    move: { speed: { min: 1, max: 2.5 } },
+                    color: { value: ['#10b981', '#34d399', '#06b6d4'] },
+                    size: { value: { min: 1, max: 4 } }
+                  }
+                }}
+                className="absolute inset-0 z-0 opacity-25"
+              />
+            )}
 
-            {/* Content */}
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900/60 to-gray-800/40 z-[-1]" />
+
+            {/* Completion Sequence */}
             <div className="relative z-10 flex flex-col items-center space-y-8">
               {/* Initial Checkmark Animation */}
               <motion.div
@@ -744,18 +672,26 @@ const ConversionModal = ({
               >
                 <div className="absolute -inset-2 rounded-full bg-green-500/20 animate-pulse" />
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-green-500/10 border-2 border-green-500/30 flex items-center justify-center backdrop-blur-sm p-2">
-                  <Lottie animationData={tickAnimation} loop={false} className="w-full h-full" />
+                  <Lottie
+                    animationData={tickAnimation}
+                    loop={false}
+                    className="w-full h-full"
+                  />
                 </div>
               </motion.div>
 
-              {/* Completion Animation */}
+              {/* "Successfully Completed" Animation */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8, duration: 0.5 }}
                 className="w-full max-w-xs"
               >
-                <Lottie animationData={completedAnimation} loop={false} className="w-full" />
+                <Lottie
+                  animationData={completedAnimation}
+                  loop={false}
+                  className="w-full"
+                />
               </motion.div>
 
               {/* Title and Description */}
@@ -770,23 +706,21 @@ const ConversionModal = ({
                     ? 'DNA Secured in Synthis'
                     : conversionType === 'graphene'
                     ? 'Graphene Matrix Stored'
-                    : conversionType === 'brain'
-                    ? 'Neural Map Archived'
-                    : 'Conversion Complete!'}
+                    : 'Neural Map Archived'}
                 </h2>
                 <p className="text-gray-300 text-sm sm:text-base">
-                  Your {conversionType || 'data'} is now securely stored in the Synthis Network.
+                  Your {conversionType} data is now protected by quantum encryption and distributed across the Synthis network.
                 </p>
               </motion.div>
 
-              {/* USB Generation and Done Button */}
+              {/* USB Generation Section */}
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.5, duration: 0.3 }}
                 className="w-full space-y-4"
               >
-                {onGenerateUSB && !usbGenerated ? (
+                {!usbGenerated ? (
                   <Button
                     ref={usbButtonRef}
                     onClick={handleGenerateUSB}
@@ -795,7 +729,7 @@ const ConversionModal = ({
                   >
                     {usbGenerating ? (
                       <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
                         <span>Generating...</span>
                       </div>
                     ) : (
@@ -805,25 +739,28 @@ const ConversionModal = ({
                       </div>
                     )}
                   </Button>
-                ) : usbGenerated ? (
+                ) : (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex flex-col items-center space-y-3 p-4 bg-gray-700/40 rounded-lg border border-green-500/30"
                   >
                     <div className="flex items-center justify-center w-16 h-16 bg-green-500/10 rounded-full">
-                      <Lottie animationData={usbAnimation} loop={false} className="w-12 h-12" />
+                      <Lottie
+                        animationData={usbAnimation}
+                        loop={false}
+                        className="w-12 h-12"
+                      />
                     </div>
                     <p className="text-green-400 font-medium">USB Ready for Download</p>
-                    <p className="text-xs text-gray-400">
-                      Your Synthis drive contains encrypted {conversionType || 'data'}
-                    </p>
+                    <p className="text-xs text-gray-400">Your Synthis drive contains encrypted {conversionType} data</p>
                   </motion.div>
-                ) : null}
+                )}
+
                 <Button
                   ref={doneButtonRef}
                   onClick={handleDoneClick}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 ease-in-out shadow-lg hover:shadow-emerald-500/20 focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-gray-800"
+                  className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 ease-in-out shadow-lg hover:shadow-gray-500/20 focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:ring-offset-gray-800"
                 >
                   {usbGenerated ? 'Continue to Dashboard' : 'View in Synthis'}
                 </Button>
@@ -837,3 +774,18 @@ const ConversionModal = ({
 };
 
 export default ConversionModal;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
