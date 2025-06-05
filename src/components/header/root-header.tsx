@@ -134,7 +134,7 @@ const RootHeader = () => {
     playsInline
     style={{ display: 'block' }}
   >
-    <source src="/videos/overview_video.mov" type="video/mp4" />
+    <source src="/videos/overview_video.mp4" type="video/mp4" />
     Your browser does not support the video tag.
   </video>
 </div>
