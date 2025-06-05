@@ -123,15 +123,21 @@ const RootHeader = () => {
                     </div>
                 </div>
 
+               
                 <div className="mt-14">
-                    <Image
-                        src="/images/hero.png"
-                        alt="hero"
-                        width={1600}
-                        height={1073}
-                        priority
-                    />
-                </div>
+  <video
+    width={1600}
+    height={1073}
+    autoPlay
+    loop
+    muted
+    playsInline
+    style={{ display: 'block' }}
+  >
+    <source src="/videos/overview_video.mov" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+</div>
             </div>
 
             {showSignin && (

@@ -50,7 +50,6 @@ export default function Sidebar() {
     { name: "My files", href: "/cloud/files", icon: <FileIcon /> },
     { name: "Photos", href: "/cloud/photos", icon: <PhotoIcon /> },
     { name: "Shared", href: "/cloud/shared", icon: <ShareIcon /> },
-    { name: "Recycle bin", href: "/cloud/trash", icon: <TrashIcon /> },
   ];
 
   const browseFilesBy = [

@@ -1,18 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   images: {
-    domains: [
-      'fmbwoqdvvbcgicdotadw.supabase.co', // Supabase bucket
-      'lh3.googleusercontent.com',        // Google profile pictures
-    ],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'fmbwoqdvvbcgicdotadw.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**', // adjust if needed
+      },
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
         port: '',
-        pathname: '/a/**',
+        pathname: '/**', // match all paths
       },
     ],
   },

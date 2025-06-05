@@ -1,8 +1,8 @@
 import { Progress } from '@/components/ui/progress';
 import Lottie from 'lottie-react';
 import tickAnimation from '../lotties/tick.json';
-import usbAnimation from '../lotties/tick.json';
-import completedAnimation from '../lotties/tick.json';
+import usbAnimation from '../lotties/file.json';
+import completedAnimation from '../lotties/file.json';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Shield, Database, Lock, Globe, Check, Cpu, Dna, Network, Download } from 'lucide-react';
@@ -10,7 +10,7 @@ import { useEffect, useState, useCallback, useRef, JSX } from 'react';
 import Confetti from 'react-confetti';
 import Particles from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
-import type { Engine, ISourceOptions } from '@tsparticles/engine';
+import { Background, type Engine, type ISourceOptions } from '@tsparticles/engine';
 
 interface ConversionModalProps {
   videoSrc: string;
@@ -347,7 +347,7 @@ const ConversionModal = ({
       return;
     }
 
-    const totalDurationMs = estimatedTime * 1000;
+    const totalDurationMs = estimatedTime * 2000;
     const updateIntervalMs = 100;
     const increment = (100 / totalDurationMs) * updateIntervalMs;
 
@@ -510,7 +510,7 @@ const ConversionModal = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'circOut' }}
-            className="relative w-full max-w-3xl mx-auto p-6 sm:p-8 rounded-2xl bg-gray-800/90 border border-gray-700 shadow-2xl overflow-hidden"
+            className="relative w-full max-w-2xl mx-auto p-6 sm:p-8 rounded-2xl bg-green-800/90 border border-gray-700 shadow-2xl overflow-hidden"
           >
             {/* Background Elements */}
             <div className="absolute inset-0 overflow-hidden">

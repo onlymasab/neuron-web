@@ -30,8 +30,8 @@ import {
   ImageOff,
   FolderPlus,
   Search,
-} from "lucide-react"; // Added more icons for clarity
-import convertToDNA from "../components/convertToDNA"; // Assuming these are in ../components/
+} from "lucide-react";
+import convertToDNA from "../components/convertToDNA";
 import convertToBrainSignals from "../components/convertToBrain";
 import convertToGraphene from "../components/convertToGraphene";
 import ConversionModal from "../components/ConversionModal";
@@ -68,21 +68,13 @@ interface Category {
 }
 
 // Reusable Empty State Component
-interface EmptyStateMessageProps {
+const EmptyStateMessage: React.FC<{
   icon?: ReactNode;
   title: string;
   message: string;
   actionText?: string;
   onActionClick?: () => void;
-}
-
-const EmptyStateMessage: React.FC<EmptyStateMessageProps> = ({
-  icon,
-  title,
-  message,
-  actionText,
-  onActionClick,
-}) => (
+}> = ({ icon, title, message, actionText, onActionClick }) => (
   <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-200 rounded-lg bg-white text-center">
     {icon || <ImageOff className="w-24 h-24 text-gray-400 opacity-70 mb-4" />}
     <h3 className="mt-4 text-lg font-medium text-gray-900">{title}</h3>
@@ -96,19 +88,21 @@ const EmptyStateMessage: React.FC<EmptyStateMessageProps> = ({
 );
 
 // Image Card Component
-interface ImageCardProps {
+const ImageCard: React.FC<{
   image: ImageFile;
   onConvert: (type: "dna" | "graphene" | "brain", src: string) => void;
   onDelete: (id: string, throwback: string) => void;
   onDownload: (src: string) => void;
   onShare: (src: string) => void;
-}
+}> = ({ image, onConvert, onDelete, onDownload, onShare }) => {
+  const [isHovered, setIsHovered] = useState(false);
 
-const ImageCard: React.FC<ImageCardProps> = ({ image, onConvert, onDelete, onDownload, onShare }) => {
   return (
     <div
       key={image.id}
-      className="group relative overflow-hidden rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
+      className="group relative overflow-hidden rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-300"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="aspect-square overflow-hidden">
         <Image
@@ -118,21 +112,20 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onConvert, onDelete, onDow
           height={300}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           onError={(e) => {
-            // Fallback for broken images
-            (e.target as HTMLImageElement).src = `https://placehold.co/300x300/E5E7EB/6B7280?text=Error`;
+            (e.target as HTMLImageElement).src = ``;
           }}
         />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
         <p className="text-white text-xs font-medium truncate">{image.date}</p>
       </div>
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div className={`absolute top-2 right-2 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 bg-white/90 hover:bg-white rounded-full"
+              className="h-8 w-8 bg-white/90 hover:bg-white rounded-full shadow-sm"
               aria-label="More options for image"
             >
               <MoreHorizontal className="h-4 w-4 text-gray-700" />
@@ -189,12 +182,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onConvert, onDelete, onDow
 };
 
 // Album Card Component
-interface AlbumCardProps {
-  album: Album;
-  onClick?: () => void;
-}
-
-const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick }) => (
+const AlbumCard: React.FC<{ album: Album; onClick?: () => void }> = ({ album, onClick }) => (
   <div
     key={album.id}
     className="group relative overflow-hidden rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
@@ -208,7 +196,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick }) => (
         height={300}
         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         onError={(e) => {
-          (e.target as HTMLImageElement).src = `https://placehold.co/400x300/E5E7EB/6B7280?text=Album`;
+          (e.target as HTMLImageElement).src = ``;
         }}
       />
     </div>
@@ -225,11 +213,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick }) => (
 );
 
 // Category Pill Component
-interface CategoryPillProps {
-  category: Category;
-  onClick?: () => void;
-}
-const CategoryPill: React.FC<CategoryPillProps> = ({ category, onClick }) => (
+const CategoryPill: React.FC<{ category: Category; onClick?: () => void }> = ({ category, onClick }) => (
   <div
     key={category.name}
     className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all duration-200 cursor-pointer"
@@ -245,7 +229,6 @@ const CategoryPill: React.FC<CategoryPillProps> = ({ category, onClick }) => (
   </div>
 );
 
-
 const PhotosPage = () => {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -256,14 +239,14 @@ const PhotosPage = () => {
   const [selectedImageSrc, setSelectedImageSrc] = useState("");
   const [animationSrc, setAnimationSrc] = useState("");
   const [progress, setProgress] = useState(0);
-  // const [conversionDone, setConversionDone] = useState(false); // This state seems not directly used for logic after refactor
   const [isLoading, setIsLoading] = useState(true);
   const [conversionType, setConversionType] = useState<"dna" | "graphene" | "brain" | null>(null);
+  const [conversionStatus, setConversionStatus] = useState<"idle" | "converting" | "completed">("idle");
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!user?.id) {
-      router.push("/"); // Or your login page
+      router.push("/");
     }
   }, [user, router]);
 
@@ -277,16 +260,33 @@ const PhotosPage = () => {
           toast.error(`Failed to fetch photos: ${error.message}`);
         })
         .finally(() => {
-          // Adding a small delay for smoother perceived loading, ensuring skeletons are visible briefly
           setTimeout(() => setIsLoading(false), 300);
         });
     } else {
-        setIsLoading(false); // Not logged in, so not loading files
+      setIsLoading(false);
     }
-  }, [user?.id, fetchFiles]); // fetchFiles from Zustand is typically stable
+  }, [user?.id, fetchFiles]);
 
-  // Memoize recent images for Carousel and Gallery
-  const recentImages = useMemo((): ImageFile[] =>
+ const favoriteImages = useMemo<ImageFile[]>(() => {
+  return files
+    .filter((file) => file.is_liked)
+    .map((file) => {
+      const createdAt = file.created_at ? new Date(file.created_at) : new Date();
+
+      return {
+        id: file.id,
+        src: file.file_url ?? "",
+        throwback: `Uploaded on ${createdAt.toLocaleDateString()}`,
+        date: createdAt.toLocaleDateString("default", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+      };
+    });
+}, [files]);
+
+   const recentImages = useMemo((): ImageFile[] =>
     files
       .filter((file) => file.type === "image" && !file.is_trashed && file.file_url)
       .map((file) => ({
@@ -305,14 +305,13 @@ const PhotosPage = () => {
   // Effect for conversion progress simulation
   useEffect(() => {
     if (!showAnimation) {
-      setProgress(0); // Reset progress when animation is not shown
+      setProgress(0);
       return;
     }
 
     let animationStartTimestamp = Date.now();
     let progressInterval: NodeJS.Timeout;
 
-    // Start visual progress simulation (up to 99%)
     progressInterval = setInterval(() => {
       const elapsed = Date.now() - animationStartTimestamp;
       const percent = Math.min((elapsed / MIN_ANIMATION_DURATION) * 99, 99);
@@ -321,7 +320,6 @@ const PhotosPage = () => {
         clearInterval(progressInterval);
       }
     }, 100);
-    
 
     return () => {
       clearInterval(progressInterval);
@@ -334,7 +332,7 @@ const PhotosPage = () => {
 
     switch (type) {
       case "dna":
-        animationVideo = "/videos/DNA_Animation.mp4"; // Ensure these paths are correct in `public`
+        animationVideo = "/videos/DNA_Animation.mp4";
         conversionName = "DNA Conversion";
         break;
       case "graphene":
@@ -354,28 +352,21 @@ const PhotosPage = () => {
     setShowConversionModal(true);
     setShowAnimation(true);
     setProgress(0);
-    // setConversionDone(false); // Reset (though not directly used for logic now)
+    setConversionStatus("converting");
 
     const conversionProcessStart = Date.now();
 
     const completeConversionProcess = () => {
-      // setConversionDone(true); // Mark actual conversion as done
+      setConversionStatus("completed");
       const elapsedSinceProcessStart = Date.now() - conversionProcessStart;
       const remainingMinDisplayTime = Math.max(0, MIN_ANIMATION_DURATION - elapsedSinceProcessStart);
 
-      // Ensure progress reaches 100% and modal closes after minimum animation time
       setTimeout(() => {
         setProgress(100);
         toast.success(`${conversionName} completed successfully!`);
-        setTimeout(() => {
-          setShowAnimation(false);
-          setShowConversionModal(false);
-          setConversionType(null);
-        }, 500); // Short delay before closing modal
       }, remainingMinDisplayTime);
     };
 
-    // Call the actual conversion utility
     switch (type) {
       case "dna":
         convertToDNA(src, completeConversionProcess);
@@ -387,7 +378,7 @@ const PhotosPage = () => {
         convertToBrainSignals(src, completeConversionProcess);
         break;
     }
-  }, []); // No dependencies if conversion functions are stable imports
+  }, []);
 
   const handleDeleteImage = useCallback(async (id: string, throwback: string) => {
     try {
@@ -398,7 +389,6 @@ const PhotosPage = () => {
           label: "Undo",
           onClick: () => {
             toast.info("Undo delete functionality coming soon.");
-            // Implement undo logic here if possible, e.g., by calling an `undoDeleteFile` method
           },
         },
       });
@@ -409,45 +399,27 @@ const PhotosPage = () => {
   }, [deleteFile]);
 
   // Placeholder handlers
-  const handleUploadPhoto = useCallback(() => {
-    toast.info("Upload photo functionality coming soon!");
-  }, []);
-  const handleDownloadImage = useCallback((src: string) => {
-    // For actual download, you might need to create an <a> tag and click it
-    // or use a library if src is a data URL or requires special handling.
-    toast.info("Download functionality coming soon!");
-    console.log("Download image:", src);
-  }, []);
-  const handleShareImage = useCallback((src: string) => {
-    toast.info("Share functionality coming soon!");
-    console.log("Share image:", src);
-  }, []);
-  const handleCreateAlbum = useCallback(() => {
-    toast.info("Create new album feature will be available soon!");
-  }, []);
-  const handleViewMap = useCallback(() => {
-    toast.info("View map functionality coming soon!");
-  }, []);
-  const handleCategoryClick = useCallback((categoryName: string) => {
-    toast.info(`Viewing ${categoryName} category - coming soon!`);
-  }, []);
-   const handleAlbumClick = useCallback((albumTitle: string) => {
-    toast.info(`Opening album: ${albumTitle} - coming soon!`);
-  }, []);
+  const handleUploadPhoto = useCallback(() => toast.info("Upload photo functionality coming soon!"), []);
+  const handleDownloadImage = useCallback((src: string) => toast.info("Download functionality coming soon!"), []);
+  const handleShareImage = useCallback((src: string) => toast.info("Share functionality coming soon!"), []);
+  const handleCreateAlbum = useCallback(() => toast.info("Create new album feature will be available soon!"), []);
+  const handleViewMap = useCallback(() => toast.info("View map functionality coming soon!"), []);
+  const handleCategoryClick = useCallback((categoryName: string) => toast.info(`Viewing ${categoryName} category - coming soon!`), []);
+  const handleAlbumClick = useCallback((albumTitle: string) => toast.info(`Opening album: ${albumTitle} - coming soon!`), []);
 
-
-  // Static data for UI (can be fetched or dynamic in a real app)
+  
+  // Static data for UI
   const albums = useMemo((): Album[] => [
     {
       id: "1",
-      src: recentImages.length > 1 && recentImages[1] ? recentImages[1].src : "https://placehold.co/400x300/A6B1E1/FFFFFF?text=Favorites",
+      src: favoriteImages.length > 1 && favoriteImages[1] ? favoriteImages[1].src : "",
       title: "Favorites",
-      subtitle: `${Math.min(recentImages.length, 12)} items`, // Example: cap at 12 for display
+      subtitle: `${Math.min(recentImages.length, 12)} items`,
       isFavorite: true,
     },
     {
       id: "2",
-      src: recentImages.length > 0 ? recentImages[0].src : "https://placehold.co/400x300/A0AEC0/FFFFFF?text=Recent",
+      src: recentImages.length > 0 ? recentImages[0].src : "",
       title: "Recent Memories",
       subtitle: `Created ${new Date().toLocaleDateString("default", {
         month: "long",
@@ -485,7 +457,7 @@ const PhotosPage = () => {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="relative rounded-md px-3 py-2 text-sm sm:text-base font-medium text-slate-700
+              className="relative rounded-md px-3  text-sm sm:text-base font-medium text-slate-700
                          data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500
                          data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 ease-in-out"
             >
@@ -548,8 +520,8 @@ const PhotosPage = () => {
               </Button>
             </div>
 
-            {albums.length === 0 && !isLoading ? ( // Show empty state only if not loading and albums are truly empty
-               <EmptyStateMessage
+            {albums.length === 0 && !isLoading ? (
+              <EmptyStateMessage
                 icon={<FolderPlus className="w-24 h-24 text-gray-400 opacity-70 mb-4" />}
                 title="No Albums Yet"
                 message="Create an album to organize your photos into collections."
@@ -558,7 +530,6 @@ const PhotosPage = () => {
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {/* Special "Create New Album" Card */}
                 <div
                   className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50/50 transition-colors cursor-pointer aspect-[4/3] hover:border-blue-400"
                   onClick={handleCreateAlbum}
@@ -573,7 +544,6 @@ const PhotosPage = () => {
                   <h3 className="text-lg font-medium text-gray-800">New Album</h3>
                   <p className="text-sm text-gray-500 mt-1">Add photos</p>
                 </div>
-                {/* Existing Albums */}
                 {albums.map((album) => (
                   <AlbumCard key={album.id} album={album} onClick={() => handleAlbumClick(album.title)} />
                 ))}
@@ -612,10 +582,10 @@ const PhotosPage = () => {
             <div>
               <h2 className="text-xl font-semibold text-gray-700 mb-4">Categories</h2>
               {categories.length === 0 ? (
-                 <EmptyStateMessage
-                    title="No Categories Found"
-                    message="Photos will be automatically categorized here."
-                  />
+                <EmptyStateMessage
+                  title="No Categories Found"
+                  message="Photos will be automatically categorized here."
+                />
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {categories.map((category) => (
@@ -627,11 +597,10 @@ const PhotosPage = () => {
 
             <div>
               <h2 className="text-xl font-semibold text-gray-700 mb-4">Memories</h2>
-              {/* Placeholder for Memories - can be dynamic */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="relative rounded-xl overflow-hidden h-48 shadow-lg group">
                   <Image
-                    src={"https://placehold.co/600x400/A6B1E1/FFFFFF?text=Memory+1"} // Placeholder
+                    src={""}
                     alt="Memory: This Day Last Year"
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -643,7 +612,7 @@ const PhotosPage = () => {
                 </div>
                 <div className="relative rounded-xl overflow-hidden h-48 shadow-lg group">
                   <Image
-                    src={"https://placehold.co/600x400/A0AEC0/FFFFFF?text=Memory+2"} // Placeholder
+                    src={""}
                     alt="Memory: Recent Highlights"
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -669,8 +638,10 @@ const PhotosPage = () => {
               setShowConversionModal(false);
               setShowAnimation(false);
               setConversionType(null);
+              setConversionStatus("idle");
             }}
             conversionType={conversionType}
+            conversionStatus={conversionStatus}
           />
         </ErrorBoundary>
       )}
@@ -678,7 +649,6 @@ const PhotosPage = () => {
   );
 };
 
-// ErrorBoundary must be a class component
 class ErrorBoundary extends Component<{ children: ReactNode, fallbackMessage?: string }, { hasError: boolean }> {
   constructor(props: { children: ReactNode, fallbackMessage?: string }) {
     super(props);
@@ -686,18 +656,15 @@ class ErrorBoundary extends Component<{ children: ReactNode, fallbackMessage?: s
   }
 
   static getDerivedStateFromError(_error: Error) {
-    // Update state so the next render will show the fallback UI.
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // You can also log the error to an error reporting service
     console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
-      // You can render any custom fallback UI
       return (
         <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-md text-center">
           <h2 className="font-bold text-lg mb-2">Oops! Something went wrong.</h2>

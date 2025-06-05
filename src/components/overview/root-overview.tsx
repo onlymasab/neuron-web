@@ -66,8 +66,19 @@ const RootOverview = () => {
                 </div>
 
                 <div>
-                    <Image src="/images/overview_img.png" alt="overview" width={930} height={600}/>
-                </div>
+                    <video
+                        width={930}
+                        height={600}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        style={{ display: 'block' }}
+                    >
+                        <source src="/videos/overview_video.mov" type="video/mp4" />
+                        Your browser does not support the video tag.
+                    </video>
+                    </div>
             </div>
         </div>
     )
