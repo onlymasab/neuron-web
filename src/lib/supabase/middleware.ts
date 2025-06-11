@@ -13,13 +13,8 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value)
-          })
-
-          supabaseResponse = NextResponse.next({ request })
-
           cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
             supabaseResponse.cookies.set(name, value, options)
           })
         },
@@ -27,18 +22,20 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Get the current user
+  // 🚫 DO NOT remove this call – it ensures session stays in sync
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // If user is not logged in and not already on the homepage, redirect to '/'
-  if (!user && request.nextUrl.pathname !== '/') {
+  // Only `/` is public
+  const isPublicRoute = request.nextUrl.pathname === '/'
+
+  // Redirect to `/` if not authenticated and trying to access a protected route
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
-  // Return the session response with updated cookies
   return supabaseResponse
 }

@@ -5,7 +5,7 @@ import RootExplore from "@/components/explore/root-explore";
 import RootFaqs from "@/components/faqs/root-faqs";
 import FollowUs from "@/components/followUs";
 import RootFooter from "@/components/footer/root-footer";
-import RootHeader from "@/components/header/root-header";
+import RootHeader from "@/components/home/header/root-header";
 import RootNavbar from "@/components/navbar/root-navbar";
 import Overview from "@/components/overview/root-overview";
 import RootPricing from "@/components/pricing/root-pricing";

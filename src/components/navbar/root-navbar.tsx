@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 const navItems = [
@@ -18,11 +17,14 @@ const navItems = [
 
 const RootNavbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { user } = useAuthStore();
+
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
 
   const toggleMenu = () => setIsMobileMenuOpen((prev) => !prev);
   const closeMenu = () => setIsMobileMenuOpen(false);
-
 
   return (
     <nav className="sticky top-0 w-full shadow-[0px_2px_6px_rgba(0,0,0,0.15)] bg-white z-30">
@@ -58,10 +60,10 @@ const RootNavbar: React.FC = () => {
           <NavbarButton text="See plans & pricing" id="plan" />
           {user ? (
             <>
-              {user.role === 'admin' && (
+              {user.role?.role_name === 'admin' && (
                 <NavbarButton text="Admin" id="admin" />
               )}
-              {user.role === 'user' && (
+              {user.role?.role_name === 'user' && (
                 <NavbarButton text="Cloud App" id="cloud" />
               )}
             </>
@@ -168,7 +170,7 @@ const NavbarButton: React.FC<NavbarButtonProps> = ({ text, id, onClick }) => {
   const baseClass =
     'px-6 py-2 text-base max-xl:text-sm font-medium rounded-[48px] tracking-wide max-xl:px-4 max-xl:py-2';
 
-  let buttonElement = (
+  const buttonElement = (
     <button
       onClick={onClick}
       className={`${baseClass} ${
@@ -185,7 +187,6 @@ const NavbarButton: React.FC<NavbarButtonProps> = ({ text, id, onClick }) => {
     return <Link href={`/${id === 'signin' ? 'signin' : id}`}>{buttonElement}</Link>;
   }
 
-  // For the pricing anchor link
   if (id === 'plan') {
     return (
       <a href="#pricing" onClick={onClick}>

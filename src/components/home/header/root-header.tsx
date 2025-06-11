@@ -2,36 +2,29 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { LogoSvg } from "../logo_svg";
-import ProfileCard from "../profileCard";
-import RootSignIn from "../signin/root-signin";
+import { LogoSvg } from "../../logo_svg";
+import ProfileCard from "../../profileCard";
+import RootSignIn from "../../signin/root-signin";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 const RootHeader = () => {
-    const { user, isLoading, signOut, setUser, checkAuth } = useAuthStore();
-
-   
+    const { user, signOut } = useAuthStore();
 
     const [showSignin, setShowSignin] = useState(false);
     const [showProfileCard, setShowProfileCard] = useState(false);
 
-    const handleProfileClick = () => {
-        setShowProfileCard((prev) => !prev);
-    };
+    const handleProfileClick = () => setShowProfileCard(prev => !prev);
 
     const handleSignOut = async () => {
         await signOut();
         setShowProfileCard(false);
     };
 
-    // ✅ Close the sign-in modal when user signs in
     useEffect(() => {
         if (user && showSignin) {
             setShowSignin(false);
         }
     }, [user, showSignin]);
-
-
 
     return (
         <header className="w-full min-h-screen">
@@ -42,13 +35,10 @@ const RootHeader = () => {
                     </div>
 
                     {user ? (
-                        <button
-                            onClick={handleProfileClick}
-                            className="flex items-center gap-2"
-                        >
-                            <p className="text-sm font-medium">{user.name}</p>
+                        <button onClick={handleProfileClick} className="flex items-center gap-2">
+                            <p className="text-sm font-medium">{user.full_name}</p>
                             <img
-                                src={user.avatar || "/images/user.png"}
+                                src={user.avatar_url || "/images/user.png"}
                                 alt="profile picture"
                                 className="object-contain shrink-0 w-9 aspect-square rounded-full"
                             />
@@ -87,16 +77,17 @@ const RootHeader = () => {
                     )}
                 </div>
 
-                {showProfileCard && (
-                    <div className="absolute top-16 right-5 w-[440px]">
+                {showProfileCard && user && (
+                    <div className="absolute top-16 right-5 w-[440px] z-40">
                         <ProfileCard
-                            name={user?.name!}
-                            email={user?.email!}
-                            profilePic={user?.avatar!}
+                            name={user.full_name}
+                            email={user.email}
+                            profilePic={user.avatar_url || "/images/user.png"}
                             onSignOut={handleSignOut}
                         />
                     </div>
                 )}
+
                 <div className="flex flex-col gap-12 max-w-7xl w-[80vw] mt-[10vh] mx-auto px-8">
                     <h1 className="text-[clamp(2rem,4vw,4rem)] font-bold text-[#121211] text-center">
                         AI-Powered Cloud Storage Reinvented with DNA, Graphene & Brain Signals
@@ -105,10 +96,7 @@ const RootHeader = () => {
                         Neuron fuses Artificial Intelligence, synthetic biology, and advanced materials to unlock the future of cloud storage and human-data interaction.
                     </p>
                     <div className="flex justify-center items-center gap-9 sm:flex-row flex-col">
-                        <button
-                            className="bg-[#0d6aff] text-white px-5 py-2.5 rounded-full font-medium"
-                            onClick={() => setShowSignin(true)}
-                        >
+                        <button className="bg-[#0d6aff] text-white px-5 py-2.5 rounded-full font-medium">
                             Create account
                         </button>
                         <button className="bg-[#121211] text-white px-5 py-2.5 rounded-full font-medium">
@@ -123,25 +111,24 @@ const RootHeader = () => {
                     </div>
                 </div>
 
-               
                 <div className="mt-14">
-  <video
-    width={1600}
-    height={1073}
-    autoPlay
-    loop
-    muted
-    playsInline
-    style={{ display: 'block' }}
-  >
-    <source src="/videos/overview_video.mp4" type="video/mp4" />
-    Your browser does not support the video tag.
-  </video>
-</div>
+                    <video
+                        width={1600}
+                        height={1073}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        style={{ display: "block" }}
+                    >
+                        <source src="/videos/overview_video.mp4" type="video/mp4" />
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
             </div>
 
             {showSignin && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs transition-all duration-300">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <RootSignIn
                         setShowSignin={setShowSignin}
                         isUserRegistered={false}

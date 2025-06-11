@@ -49,12 +49,12 @@ export default function Home() {
   const [editName, setEditName] = useState("");
   const [rowSelection, setRowSelection] = useState({});
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!user?.id) {
-      router.push("/");
-    }
-  }, [user, router]);
+  // // Redirect to login if not authenticated
+  // useEffect(() => {
+  //   if (!user?.id) {
+  //     router.push("/");
+  //   }
+  // }, [user, router]);
 
   // Fetch files for authenticated user
   useEffect(() => {
