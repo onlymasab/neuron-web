@@ -87,10 +87,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       email: profileData.email || sessionData.user.email || '',
       avatar_url: profileData.avatar_url || sessionData.user.user_metadata?.avatar_url || '',
       role: (
-        profileData.role && Array.isArray(profileData.role)
-          ? (profileData.role[0] as { role_name: ValidRole })
-          : (profileData.role as { role_name: ValidRole } | undefined)
-      ) ?? { role_name: 'user' as ValidRole },
+          profileData.role && typeof profileData.role === 'object' && 'role_name' in profileData.role
+            ? profileData.role as { role_name: ValidRole }
+            : { role_name: 'user' as ValidRole }
+        ),
 
       is_active: profileData.is_active ?? true,
       storage_limit_gb: profileData.storage_limit_gb ?? 5,
@@ -175,11 +175,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         email: updatedProfile.email || session.user.email || '',
         avatar_url: updatedProfile.avatar_url || session.user.user_metadata?.avatar_url || '',
         role: (
-          updatedProfile.role && Array.isArray(updatedProfile.role)
-            ? { role_name: updatedProfile.role[0]?.role_name as ValidRole }
-            : (updatedProfile.role && typeof updatedProfile.role === 'object' && 'role_name' in updatedProfile.role)
-              ? { role_name: (updatedProfile.role as { role_name: ValidRole }).role_name }
-              : { role_name: 'user' as ValidRole }
+          profileData.role && typeof profileData.role === 'object' && 'role_name' in profileData.role
+            ? profileData.role as { role_name: ValidRole }
+            : { role_name: 'user' as ValidRole }
         ),
         is_active: updatedProfile.is_active ?? true,
         storage_limit_gb: updatedProfile.storage_limit_gb ?? 5,

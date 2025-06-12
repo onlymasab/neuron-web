@@ -35,6 +35,7 @@ import {
 import {
   ColumnDef,
   ColumnFiltersState,
+  FilterFn,
   Row,
   SortingState,
   VisibilityState,
@@ -104,7 +105,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 
-import { CalendarIcon } from "lucide-react"
+import { ArrowUpDown, CalendarIcon } from "lucide-react"
 
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -168,6 +169,14 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
+// Custom Date Range Filter Function
+const dateRangeFilter: FilterFn<any> = (row, columnId, value) => {
+  const date = new Date(row.getValue(columnId)).getTime()
+  const start = value?.start ? new Date(value.start).getTime() : -Infinity
+  const end = value?.end ? new Date(value.end).getTime() : Infinity
+  return date >= start && date <= end
+}
+
 const columns: ColumnDef<z.infer<typeof userSchema>>[] = [
   {
     id: "drag",
@@ -202,11 +211,22 @@ const columns: ColumnDef<z.infer<typeof userSchema>>[] = [
   },
   {
     accessorKey: "order",
-    header: "Order",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Order
+          <ArrowUpDown />
+        </Button>
+      )
+    },
     cell: ({ row }) => {
       return <div className="underline">#{String(row.original.order_number).padStart(4, "0")}</div>
     },
     enableHiding: false,
+
   },
   {
     accessorKey: "cutomer",
@@ -230,11 +250,12 @@ const columns: ColumnDef<z.infer<typeof userSchema>>[] = [
     accessorKey: "date",
     header: "Date",
     cell: ({ row }) => (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1">
         <div className="font-medium">{new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(row.original.created_at))}</div>
         <div className="text-gray-500">{new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(row.original.created_at)).toLowerCase()}</div>
       </div>
     ),
+    filterFn: dateRangeFilter
   },
   {
     accessorKey: "storage",
@@ -249,6 +270,17 @@ const columns: ColumnDef<z.infer<typeof userSchema>>[] = [
     cell: ({ row }) => (
         row.original.price === 0 ? <Badge variant={"outline"}>Free</Badge>:
       <div className="text-[16px] text-gray-800">${row.original.price}</div>
+    ),
+  },
+  {
+    accessorKey: "package",
+    header: () => <div className="w-full text-left">Package</div>,
+    cell: ({ row }) => ( 
+      row.original.current_package === "free" ?
+      <Badge variant={"outline"}>Basic</Badge> :
+      row.original.current_package === "personal" ?
+      <Badge variant={"outline"}>Personal</Badge> :
+      <Badge variant={"outline"}>Standard</Badge>
     ),
   },
   {
@@ -349,7 +381,7 @@ export function OrderTable({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
-
+ const [globalFilter, setGlobalFilter] = React.useState("")
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -362,27 +394,111 @@ export function OrderTable({
     useSensor(KeyboardSensor, {})
   )
 
-  const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id) || [],
-    [data]
-  )
+ // Tab type constants to avoid magic strings
+const tabTypes = {
+  ALL: 'all',
+  INACTIVE: 'inactive',
+  PAID: 'paid',
+  PENDING: 'pending',
+  CANCEL: 'cancel',
+  FREE: 'free',
+}
+
+// Count each category based on payment status or package type
+const tabCounts = React.useMemo(() => {
+  let paid = 0, pending = 0, cancel = 0, free = 0
+
+  for (const d of data) {
+    if (d.payment_status === 'paid') paid++
+    if (d.payment_status === 'unpaid' && d.current_package !== 'free') pending++
+    if (d.payment_status === 'cancel') cancel++
+    if (d.current_package === 'free') free++
+  }
+
+  return {
+    all: data.length,
+    paid,
+    pending,
+    cancel,
+    free,
+  }
+}, [data])
+
+// Destructure tab counts
+const {
+  all: allTabCount,
+  paid: paidTabCount,
+  pending: pendingTabCount,
+  cancel: cancelTabCount,
+  free: freeTabCount,
+} = tabCounts
+
+// Filter data based on current tab
+const filteredData = React.useMemo(() => {
+  switch (tab) {
+    case tabTypes.ALL:
+      return data.filter(p => p.is_active)
+
+    case tabTypes.INACTIVE:
+      return data.filter(p => !p.is_active)
+
+    case tabTypes.PAID:
+      return data.filter(p => p.payment_status === 'paid')
+
+    case tabTypes.PENDING:
+      return data.filter(p => p.payment_status === 'unpaid' && p.current_package !== 'free')
+
+    case tabTypes.CANCEL:
+      return data.filter(p => p.payment_status === 'cancel')
+
+    case tabTypes.FREE:
+      return data.filter(p => p.current_package === 'free')
+
+    default:
+      return data
+  }
+}, [data, tab])
+
+// Get only the IDs from the filtered data
+const dataIds = React.useMemo<UniqueIdentifier[]>(
+  () => filteredData.map(({ id }) => id),
+  [filteredData]
+)
+
+const globalFilterFn: FilterFn<z.infer<typeof userSchema>> = (row, columnId, filterValue) => {
+        const search = filterValue.toLowerCase()
+
+        return (
+            String(row.original.order_number).toLowerCase().includes(search) ||
+            String(row.original.full_name).toLowerCase().includes(search)
+        )
+    }
 
   const [startopen, setStartOpen] = React.useState(false)
   const [endopen, setEndOpen] = React.useState(false)
   const [startdate, setStartDate] = React.useState<Date | undefined>(
-    new Date("2025-06-01")
+    new Date("2025-01-01")
   )
   const [startmonth, setStartMonth] = React.useState<Date | undefined>(startdate)
   const [startvalue, setStartValue] = React.useState(formatDate(startdate))
 
   const [enddate, setEndDate] = React.useState<Date | undefined>(
-    new Date("2025-06-01")
+    new Date("2025-01-01")
   )
   const [endmonth, setEndMonth] = React.useState<Date | undefined>(enddate)
   const [endvalue, setEndValue] = React.useState(formatDate(enddate))
 
+  // Custom Date Range Filter Function
+  const dateRangeFilter: FilterFn<any> = (row, columnId, value) => {
+    const date = new Date(row.getValue(columnId)).getTime()
+    const start = value?.start ? new Date(value.start).getTime() : -Infinity
+    const end = value?.end ? new Date(value.end).getTime() : Infinity
+    return date >= start && date <= end
+  }
+
+
   const table = useReactTable({
-    data,
+    data : filteredData,
     columns,
     state: {
       sorting,
@@ -390,6 +506,7 @@ export function OrderTable({
       rowSelection,
       columnFilters,
       pagination,
+      globalFilter,
     },
     getRowId: (row) => row.id.toString(),
     enableRowSelection: true,
@@ -404,6 +521,11 @@ export function OrderTable({
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn,
+    filterFns: {
+      dateRange: dateRangeFilter,
+    },
   })
 
   function handleDragEnd(event: DragEndEvent) {
@@ -417,6 +539,17 @@ export function OrderTable({
     }
   }
 
+  // Apply filter when dates change
+  // React.useEffect(() => {
+  //   const column = table.getColumn("date")
+  //   if (column) {
+  //     column.setFilterValue({
+  //       start: startdate,
+  //       end: enddate,
+  //     })
+  //   }
+  // }, [startdate, enddate])
+
   return (
     <Tabs
       value={tab} onValueChange={(value) => setTab(value)} 
@@ -429,19 +562,19 @@ export function OrderTable({
         <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30   **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
          <TabsTrigger
             value="all">
-            All <Badge variant="secondary">3</Badge>
+            All <Badge variant="secondary">{allTabCount}</Badge>
         </TabsTrigger>
           <TabsTrigger value="paid">
-            Paid <Badge variant="secondary">3</Badge>
+            Paid <Badge variant="secondary">{paidTabCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="pending">
-            Pending <Badge variant="secondary">2</Badge>
+            Pending <Badge variant="secondary">{pendingTabCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="cancel">
-            Cancel <Badge variant="secondary">2</Badge>
+            Cancel <Badge variant="secondary">{cancelTabCount}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="active">
-            Active <Badge variant="secondary">2</Badge>
+          <TabsTrigger value="free">
+            Free <Badge variant="secondary">{freeTabCount}</Badge>
           </TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
@@ -529,9 +662,9 @@ export function OrderTable({
             >
                 <Calendar
                 mode="single"
-                selected={enddate}
+                selected={startdate}
                 captionLayout="dropdown"
-                month={endmonth}
+                month={startmonth}
                 onMonthChange={setStartMonth}
                 onSelect={(date) => {
                     setStartDate(date)
@@ -605,7 +738,7 @@ export function OrderTable({
             <Label htmlFor="enddate" className="px-1">
                 Search
             </Label>
-            <SearchInput />
+            <SearchInput value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} />
         </div>
         
       </div>

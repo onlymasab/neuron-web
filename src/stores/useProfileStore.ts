@@ -50,28 +50,27 @@ export const useProfileStore = create<ProfileStore>((set, get) => {
         role:role_id!inner (
           role_name
         )
-      `);
-      //.eq('role.role_name', 'user'); // Filter users by role name
+      `)
+      .eq('role.role_name', 'user'); // ✅ Only fetch normal users
 
     if (error) {
       console.error('Fetch users error:', error);
       set({ loading: false });
-      throw new Error(error.message);
+      toast.error('Error fetching users');
+      return;
     }
 
-    toast(data.length)
+    // 🧹 Ensure role is not an array
+    const formattedUsers = (data as any[]).map((user) => ({
+      ...user,
+      role: Array.isArray(user.role) ? user.role[0] : user.role,
+    }));
 
-    set({
-      users: (data as any[]).map((user) => ({
-        ...user,
-        role: Array.isArray(user.role) ? user.role[0] : user.role,
-      })) as UserModel[],
-      loading: false,
-    });
+    set({ users: formattedUsers, loading: false });
   };
 
   const subscribeToUsers = () => {
-    if (channel) return; // avoid multiple subscriptions
+    if (channel) return; // 🚫 Avoid duplicate subscriptions
 
     channel = supabase
       .channel('realtime-users')
@@ -83,7 +82,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => {
           table: 'profiles',
         },
         async () => {
-          await fetchUsers(); // refresh data on changes
+          await fetchUsers(); // 🔁 Refresh on realtime change
         }
       )
       .subscribe();
@@ -92,12 +91,12 @@ export const useProfileStore = create<ProfileStore>((set, get) => {
   const reset = () => {
     set({ users: [], loading: false });
     if (channel) {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(channel); // 🧹 Cleanup
       channel = null;
     }
   };
 
-  // Initial fetch and subscribe
+  // ✅ Only trigger once (store-level)
   fetchUsers().then(subscribeToUsers);
 
   return {

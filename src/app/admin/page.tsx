@@ -29,6 +29,11 @@ import React from 'react';
 import { useProfileStore } from '@/stores/useProfileStore';
 import { toast } from 'sonner';
 import { UserModel } from '@/types/UserModel';
+import { YearChart } from '@/components/admin/year-chart';
+import { TotalUserChart } from '@/components/admin/total-user-chart';
+import { UserMonthChart } from '@/components/admin/user-month-chart';
+import { UserStorageChart } from '@/components/admin/user-storage-chart';
+import { TotalSaleChart } from '@/components/admin/total-sale-chart';
 
 
 
@@ -36,7 +41,7 @@ const Home = () => {
     const router = useRouter();
     
     const { user } = useAuthStore();
-    const { users, fetchUsers, loading } = useProfileStore();
+    const { users, loading, fetchUsers, reset } = useProfileStore();
     const [progress, setProgress] = React.useState([]);
     const [totalOrders, setTotalOrderProgress] = React.useState(0);
     const [paidOrders, setPaidOrderProgress] = React.useState(0);
@@ -68,7 +73,6 @@ const Home = () => {
 
 
 
-
   return (
     <div className="flex w-full  flex-col gap-6">
 
@@ -78,56 +82,30 @@ const Home = () => {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="order">Orders</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account</CardTitle>
-              <CardDescription>
-                Make changes to your account here. Click save when you&apos;re
-                done.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-6">
-              <div className="grid gap-3">
-                <Label htmlFor="tabs-demo-name">Name</Label>
-                <Input id="tabs-demo-name" defaultValue="Pedro Duarte" />
+
+          <div className='flex flex-col gap-4 w-full'>
+
+           <div className='flex flex-row gap-4 w-full'>
+              <div className="flex-1">
+                <TotalUserChart data={users as UserModel[]} />
               </div>
-              <div className="grid gap-3">
-                <Label htmlFor="tabs-demo-username">Username</Label>
-                <Input id="tabs-demo-username" defaultValue="@peduarte" />
+              <div className="flex-1">
+                <UserMonthChart data={users as UserModel[]} />
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Save changes</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        <TabsContent value="analytics">
-          <Card>
-            <CardHeader>
-              <CardTitle>Password</CardTitle>
-              <CardDescription>
-                Change your password here. After saving, you&apos;ll be logged
-                out.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-6">
-              <div className="grid gap-3">
-                <Label htmlFor="tabs-demo-current">Current password</Label>
-                <Input id="tabs-demo-current" type="password" />
+              <div className="flex-1">
+                <UserStorageChart data={users as UserModel[]} />
               </div>
-              <div className="grid gap-3">
-                <Label htmlFor="tabs-demo-new">New password</Label>
-                <Input id="tabs-demo-new" type="password" />
+              <div className="flex-1">
+                <TotalSaleChart data={users as UserModel[]} />
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Save password</Button>
-            </CardFooter>
-          </Card>
+            </div>
+            <YearChart  data = { users as UserModel[]}/>
+          </div>
+          
+         
         </TabsContent>
         <TabsContent value="order">
           <Card>
