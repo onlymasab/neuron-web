@@ -81,7 +81,7 @@ const Header = () => {
                             className="hover:scale-105 transition rounded-full p-1.5"
                         >
                             <Image
-                                src={user?.avatar || ""}
+                                src={user?.avatar_url || ""}
                                 alt="User Avatar"
                                 width={32} height={32}
                                 className="rounded-full"
@@ -91,9 +91,9 @@ const Header = () => {
                     {showProfileCard && (
                     <div className="absolute top-13 right-3 w-[35vw] z-50">
                         <ProfileCard
-                            name={user?.name!}
+                            name={user?.full_name!}
                             email={user?.email!}
-                            profilePic={user?.avatar!}
+                            profilePic={user?.avatar_url!}
                             onSignOut={handleSignOut}
                         />
                     </div>
