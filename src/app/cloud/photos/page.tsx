@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import React from "react";
+import { Input } from "@/components/ui/input";
 
 // Constants
 const MIN_ANIMATION_DURATION = 10000; // 10 seconds for conversion animation
@@ -193,35 +194,70 @@ const ImageCard: React.FC<{
 };
 
 // Album Card Component
-const AlbumCard: React.FC<{ album: Album; onClick?: () => void; isMobile?: boolean }> = ({ album, onClick, isMobile = false }) => (
-  <div
-    key={album.id}
-    className="group relative overflow-hidden rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
-    onClick={onClick}
-  >
-    <div className="aspect-[4/3] overflow-hidden">
-      <Image
-        src={album.src}
-        alt={album.title}
-        width={400}
-        height={300}
-        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = ``;
-        }}
-      />
-    </div>
-    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
-      <h3 className="text-white text-base sm:text-lg font-semibold">{album.title}</h3>
-      <p className="text-white/80 text-xs sm:text-sm">{album.subtitle}</p>
-    </div>
-    {album.isFavorite && (
-      <div className="absolute top-3 left-3 bg-yellow-400 text-white p-1 sm:p-1.5 rounded-full shadow-md">
-        <Star className="h-3 w-3 sm:h-4 sm:w-4" fill="white" />
+const AlbumCard: React.FC<{ 
+  album: Album; 
+  onClick?: () => void; 
+  isMobile?: boolean;
+  isSelected?: boolean;
+}> = ({ album, onClick, isMobile = false, isSelected = false }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      key={album.id}
+      className={`group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer
+                  ${isSelected ? 'ring-4 ring-blue-500 scale-[0.98]' : ''}`}
+      onClick={onClick}
+      onMouseEnter={() => !isMobile && setIsHovered(true)}
+      onMouseLeave={() => !isMobile && setIsHovered(false)}
+    >
+      <div className="aspect-[4/3] overflow-hidden">
+        <Image
+          src={album.src}
+          alt={album.title}
+          width={400}
+          height={300}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/placeholder-album.jpg';
+          }}
+        />
       </div>
-    )}
-  </div>
-);
+      
+      {/* Gradient overlay with album info */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col justify-end p-4 sm:p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-white text-lg sm:text-xl font-bold drop-shadow-md">{album.title}</h3>
+            <p className="text-white/90 text-xs sm:text-sm mt-0.5 drop-shadow-md">{album.subtitle}</p>
+          </div>
+          {album.isFavorite && (
+            <div className="bg-yellow-400/90 p-1.5 rounded-full shadow-lg">
+              <Star className="h-4 w-4 text-white" fill="currentColor" />
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Hover overlay with view button */}
+      <div className={`absolute inset-0 bg-black/20 opacity-0 ${(isHovered || isMobile) ? 'opacity-100' : ''} 
+                      transition-opacity duration-300 flex items-center justify-center`}>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          className="bg-white/90 hover:bg-white text-gray-900 shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        >
+          View Album
+        </Button>
+      </div>
+      
+      {/* Floating corner decoration */}
+      <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 transform rotate-45 origin-bottom-left translate-y-[-50%]"></div>
+      </div>
+    </div>
+  );
+};
 
 // Category Pill Component
 const CategoryPill: React.FC<{ category: Category; onClick?: () => void; isMobile?: boolean }> = ({ category, onClick, isMobile = false }) => (
@@ -556,104 +592,204 @@ const handleAlbumClick = useCallback((album: Album) => {
         </TabsContent>
 
         {/* Albums Tab */}
-        <TabsContent value="album" className="mt-2">
-  <div className="flex flex-col gap-4 sm:gap-6">
+         <TabsContent value="album" className="mt-2">
+  <div className="flex flex-col gap-6 sm:gap-8">
     <div className="flex justify-between items-center">
-      <h2 className="text-lg sm:text-xl font-semibold text-gray-700">My Albums</h2>
-      {selectedAlbum && (
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Your Albums</h2>
+        <p className="text-gray-500 text-sm sm:text-base mt-1">
+          {selectedAlbum ? selectedAlbum.title : `${fixedAlbums.length} collections`}
+        </p>
+      </div>
+      
+      {selectedAlbum ? (
         <Button
           onClick={() => setSelectedAlbum(null)}
           size={isMobile ? "sm" : "default"}
           variant="ghost"
-          className="text-blue-600 hover:text-blue-700"
+          className="text-blue-600 hover:text-blue-700 gap-2"
         >
-          Back to albums
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
+               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          All Albums
         </Button>
+      ) : (
+        <div className="relative">
+          <Input 
+            type="text" 
+            placeholder="Search albums..." 
+            className="pl-10 w-[180px] sm:w-[220px] rounded-full bg-white border-gray-300 focus:border-blue-500"
+          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        </div>
       )}
     </div>
 
     {selectedAlbum ? (
-      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
-          <div className="w-full sm:w-1/3">
-            <div className="aspect-[4/3] overflow-hidden rounded-xl shadow-md">
-              <Image
-                src={selectedAlbum.src}
-                alt={selectedAlbum.title}
-                width={400}
-                height={300}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/placeholder-album.jpg";
-                }}
-              />
+      <div className="space-y-6 animate-fadeIn">
+        {/* Album Header with gradient background */}
+        <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-200/50">
+          <div className="flex flex-col sm:flex-row gap-6 items-center">
+            {/* Album cover with floating badge */}
+            <div className="relative w-full sm:w-1/4 min-w-[200px]">
+              <div className="aspect-[4/3] overflow-hidden rounded-xl shadow-lg border-4 border-white">
+                <Image
+                  src={selectedAlbum.src}
+                  alt={selectedAlbum.title}
+                  width={400}
+                  height={300}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder-album.jpg';
+                  }}
+                />
+              </div>
+              <div className="absolute -bottom-4 -right-4 bg-white p-2 rounded-full shadow-lg border border-gray-200">
+                <div className="bg-blue-100 p-2 rounded-full">
+                  {selectedAlbum.isFavorite ? (
+                    <Star className="h-5 w-5 text-yellow-400" fill="currentColor" />
+                  ) : (
+                    <Grid className="h-5 w-5 text-blue-600" />
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="w-full sm:w-2/3">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">{selectedAlbum.title}</h3>
-              {selectedAlbum.isFavorite && (
-                <Star className="h-5 w-5 text-yellow-400" fill="currentColor" />
-              )}
-            </div>
-            <p className="text-gray-600 text-sm sm:text-base mb-4">{selectedAlbum.subtitle}</p>
             
-            <div className="flex gap-2">
-              <Button size={isMobile ? "sm" : "default"} variant="outline" className="gap-2">
-                <Share2 className="h-4 w-4" />
-                Share
-              </Button>
-              <Button size={isMobile ? "sm" : "default"} variant="outline" className="gap-2">
-                <DownloadIcon className="h-4 w-4" />
-                Download All
-              </Button>
+            {/* Album metadata */}
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-3">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-800">{selectedAlbum.title}</h3>
+                {selectedAlbum.isFavorite && (
+                  <Star className="h-6 w-6 text-yellow-400" fill="currentColor" />
+                )}
+              </div>
+              <p className="text-gray-600">{selectedAlbum.subtitle}</p>
+              
+              {/* Action buttons with hover effects */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button 
+                  className="gap-2 hover:-translate-y-0.5 transition-transform" 
+                  variant="default"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share Album
+                </Button>
+                <Button 
+                  className="gap-2 hover:-translate-y-0.5 transition-transform" 
+                  variant="outline"
+                >
+                  <DownloadIcon className="h-4 w-4" />
+                  Download All
+                </Button>
+                <Button 
+                  className="gap-2 hover:-translate-y-0.5 transition-transform" 
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Photos
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
-        {recentImages.length > 0 ? (
-          <div className={`grid ${getGridColumns()} gap-2 sm:gap-3 md:gap-4`}>
-            {recentImages.slice(0, 12).map((image) => (
-              <ImageCard
-                key={image.id}
-                image={image}
-                onConvert={handleConvert}
-                onDelete={handleDeleteImage}
-                onDownload={handleDownloadImage}
-                onShare={handleShareImage}
-                isMobile={isMobile}
-              />
-            ))}
+        {/* Album Content */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-semibold text-gray-700 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
+                   stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              Photos in this album
+            </h4>
+            <div className="text-sm text-gray-500">
+              {recentImages.length > 0 ? `${recentImages.length} items` : 'Empty'}
+            </div>
           </div>
-        ) : (
-          <EmptyStateMessage
-            icon={<ImageOff className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-gray-400 opacity-70 mb-4" />}
-            title="No Photos in This Album"
-            message="Add photos to this album to see them here."
-          />
-        )}
+
+          {recentImages.length > 0 ? (
+            <div className={`grid ${getGridColumns()} gap-3 sm:gap-4`}>
+              {recentImages.slice(0, 12).map((image) => (
+                <ImageCard
+                  key={image.id}
+                  image={image}
+                  onConvert={handleConvert}
+                  onDelete={handleDeleteImage}
+                  onDownload={handleDownloadImage}
+                  onShare={handleShareImage}
+                  isMobile={isMobile}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyStateMessage
+              icon={<ImageOff className="w-16 h-16 text-gray-400 opacity-70 mb-4" />}
+              title="This Album is Empty"
+              message="Add photos to this album to see them here."
+              actionText="Add Photos Now"
+              onActionClick={() => toast.info("Add photos functionality coming soon")}
+            />
+          )}
+        </div>
       </div>
     ) : (
-      <>
-        {fixedAlbums.length === 0 ? (
-          <EmptyStateMessage
-            icon={<FolderPlus className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-gray-400 opacity-70 mb-4" />}
-            title="No Albums Yet"
-            message="We couldn't find any albums in your collection."
-          />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {fixedAlbums.map((album) => (
-              <AlbumCard 
-                key={album.id} 
-                album={album} 
-                onClick={() => handleAlbumClick(album)}
-                isMobile={isMobile}
-              />
-            ))}
+      <div className="space-y-6">
+        {/* Featured Album section */}
+        {fixedAlbums.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
+                   stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              Featured Album
+            </h3>
+            <AlbumCard 
+              album={fixedAlbums[0]} 
+              onClick={() => handleAlbumClick(fixedAlbums[0])}
+              isMobile={isMobile}
+            />
           </div>
         )}
-      </>
+
+        {/* All Albums Grid */}
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
+                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="9" y1="21" x2="9" y2="9"></line>
+            </svg>
+            All Albums
+          </h3>
+          
+          {fixedAlbums.length > 1 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {fixedAlbums.slice(1).map((album) => (
+                <AlbumCard 
+                  key={album.id} 
+                  album={album} 
+                  onClick={() => handleAlbumClick(album)}
+                  isMobile={isMobile}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyStateMessage
+              icon={<FolderPlus className="w-16 h-16 text-gray-400 opacity-70 mb-4" />}
+              title="No Albums Found"
+              message="You don't have any albums yet."
+            />
+          )}
+        </div>
+      </div>
     )}
   </div>
 </TabsContent>
