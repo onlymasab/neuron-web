@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useMemo, useState, Component, ReactNode, useCallback } from "react";
+import { useEffect, useMemo, useState, Component, ReactNode, useCallback, useRef } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +43,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import React from "react";
 import { Input } from "@/components/ui/input";
+import { motion } from "framer-motion";
 
 // Constants
 const MIN_ANIMATION_DURATION = 10000; // 10 seconds for conversion animation
@@ -201,59 +202,137 @@ const AlbumCard: React.FC<{
   isSelected?: boolean;
 }> = ({ album, onClick, isMobile = false, isSelected = false }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // 3D tilt effect
+  useEffect(() => {
+    if (isMobile || !cardRef.current) return;
+
+    const handleMove = (e: MouseEvent) => {
+      if (!cardRef.current) return;
+      const rect = cardRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateY = (x - centerX) / 20;
+      const rotateX = (centerY - y) / 20;
+      
+      cardRef.current.style.transform = `
+        perspective(1000px)
+        rotateX(${rotateX}deg)
+        rotateY(${rotateY}deg)
+        scale(${isHovered ? 1.03 : 1})
+      `;
+    };
+
+    const handleLeave = () => {
+      if (cardRef.current) {
+        cardRef.current.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+      }
+    };
+
+    if (isHovered) {
+      cardRef.current?.addEventListener('mousemove', handleMove);
+      cardRef.current?.addEventListener('mouseleave', handleLeave);
+    }
+
+    return () => {
+      cardRef.current?.removeEventListener('mousemove', handleMove);
+      cardRef.current?.removeEventListener('mouseleave', handleLeave);
+    };
+  }, [isHovered, isMobile]);
 
   return (
     <div
-      key={album.id}
-      className={`group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer
-                  ${isSelected ? 'ring-4 ring-blue-500 scale-[0.98]' : ''}`}
+      ref={cardRef}
+      className={`group relative overflow-hidden rounded-3xl shadow-2xl transition-all duration-500 ease-out cursor-pointer
+                  ${isSelected ? 'ring-4 ring-blue-400/80 scale-[0.98]' : ''}
+                  ${isHovered ? 'shadow-lg' : 'shadow-md'}`}
       onClick={onClick}
       onMouseEnter={() => !isMobile && setIsHovered(true)}
       onMouseLeave={() => !isMobile && setIsHovered(false)}
+      style={{
+        transformStyle: 'preserve-3d',
+        transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease-out'
+      }}
     >
+      {/* Glass morphism overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 rounded-3xl" />
+      
+      {/* Album image with parallax effect */}
       <div className="aspect-[4/3] overflow-hidden">
         <Image
           src={album.src}
           alt={album.title}
           width={400}
           height={300}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+          style={{
+            transform: isHovered ? 'translateZ(20px)' : 'translateZ(0)',
+            transition: 'transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/placeholder-album.jpg';
           }}
         />
       </div>
       
-      {/* Gradient overlay with album info */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col justify-end p-4 sm:p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-white text-lg sm:text-xl font-bold drop-shadow-md">{album.title}</h3>
-            <p className="text-white/90 text-xs sm:text-sm mt-0.5 drop-shadow-md">{album.subtitle}</p>
-          </div>
-          {album.isFavorite && (
-            <div className="bg-yellow-400/90 p-1.5 rounded-full shadow-lg">
-              <Star className="h-4 w-4 text-white" fill="currentColor" />
+      {/* Floating metadata with depth */}
+      <div className="absolute inset-0 flex flex-col justify-end p-5 z-10" style={{
+        transform: isHovered ? 'translateZ(30px)' : 'translateZ(0)',
+        transition: 'transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}>
+        <div className="bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 rounded-2xl backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-white text-xl font-bold drop-shadow-lg">{album.title}</h3>
+              <p className="text-white/80 text-sm mt-1 drop-shadow-lg">{album.subtitle}</p>
             </div>
-          )}
+            {album.isFavorite && (
+              <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 p-2 rounded-full shadow-lg">
+                <Star className="h-4 w-4 text-white" fill="currentColor" />
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
-      {/* Hover overlay with view button */}
-      <div className={`absolute inset-0 bg-black/20 opacity-0 ${(isHovered || isMobile) ? 'opacity-100' : ''} 
-                      transition-opacity duration-300 flex items-center justify-center`}>
+      {/* Hover action button with floating effect */}
+      <div className={`absolute inset-0 flex items-center justify-center z-20 transition-all duration-500
+                      ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
         <Button 
-          variant="ghost" 
+          variant="default"
           size="sm"
-          className="bg-white/90 hover:bg-white text-gray-900 shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          className="bg-white/90 hover:bg-white text-gray-900 shadow-xl hover:shadow-2xl 
+                    transform transition-all duration-500
+                    hover:-translate-y-1 hover:scale-105"
+          style={{
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.3)'
+          }}
         >
           View Album
         </Button>
       </div>
       
-      {/* Floating corner decoration */}
-      <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 transform rotate-45 origin-bottom-left translate-y-[-50%]"></div>
+      {/* Floating particles decoration */}
+      <div className="absolute inset-0 overflow-hidden rounded-3xl">
+        {[...Array(5)].map((_, i) => (
+          <div 
+            key={i}
+            className="absolute bg-white/30 rounded-full"
+            style={{
+              width: `${Math.random() * 6 + 2}px`,
+              height: `${Math.random() * 6 + 2}px`,
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              opacity: isHovered ? 0.8 : 0,
+              transform: isHovered ? 'translateZ(10px)' : 'translateZ(0)',
+              transition: `opacity 0.5s ease-out ${i * 0.1}s, transform 0.5s ease-out ${i * 0.1}s`
+            }}
+          />
+        ))}
       </div>
     </div>
   );
@@ -592,114 +671,166 @@ const handleAlbumClick = useCallback((album: Album) => {
         </TabsContent>
 
         {/* Albums Tab */}
-         <TabsContent value="album" className="mt-2">
-  <div className="flex flex-col gap-6 sm:gap-8">
-    <div className="flex justify-between items-center">
+          <TabsContent value="album" className="mt-4">
+  <div className="flex flex-col gap-8">
+    {/* Header with animated underline */}
+    <div className="flex justify-between items-center pb-4 border-b border-gray-200/50 relative">
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Your Albums</h2>
-        <p className="text-gray-500 text-sm sm:text-base mt-1">
-          {selectedAlbum ? selectedAlbum.title : `${fixedAlbums.length} collections`}
+        <h2 className="text-2xl font-bold text-gray-800 relative inline-block">
+          Your Albums
+          <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500 origin-left scale-x-0 
+                          group-hover:scale-x-100 transition-transform duration-300"></span>
+        </h2>
+        <p className="text-gray-500 text-sm mt-1">
+          {selectedAlbum ? selectedAlbum.title : `${fixedAlbums.length} curated collections`}
         </p>
       </div>
       
       {selectedAlbum ? (
         <Button
           onClick={() => setSelectedAlbum(null)}
-          size={isMobile ? "sm" : "default"}
           variant="ghost"
-          className="text-blue-600 hover:text-blue-700 gap-2"
+          className="text-blue-600 hover:text-blue-700 gap-2 transition-all"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
-               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+               className="transition-transform hover:-translate-x-1">
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
           All Albums
         </Button>
       ) : (
-        <div className="relative">
+        <div className="relative group">
           <Input 
             type="text" 
             placeholder="Search albums..." 
-            className="pl-10 w-[180px] sm:w-[220px] rounded-full bg-white border-gray-300 focus:border-blue-500"
+            className="pl-10 w-[200px] sm:w-[240px] rounded-full bg-white/80 backdrop-blur-sm
+                      border-gray-300 focus:border-blue-500 transition-all duration-300
+                      group-hover:w-[220px] sm:group-hover:w-[260px]"
           />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 
+                            transition-colors group-focus-within:text-blue-500" />
         </div>
       )}
     </div>
 
     {selectedAlbum ? (
-      <div className="space-y-6 animate-fadeIn">
-        {/* Album Header with gradient background */}
-        <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-200/50">
-          <div className="flex flex-col sm:flex-row gap-6 items-center">
-            {/* Album cover with floating badge */}
-            <div className="relative w-full sm:w-1/4 min-w-[200px]">
-              <div className="aspect-[4/3] overflow-hidden rounded-xl shadow-lg border-4 border-white">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-8"
+      >
+        {/* Album Header with Glass Morphism */}
+        <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-6 shadow-lg border border-white/20
+                       bg-gradient-to-br from-white/90 to-blue-50/50">
+          <div className="flex flex-col sm:flex-row gap-8 items-center">
+            {/* Album cover with floating shadow */}
+            <div className="relative w-full sm:w-1/3 min-w-[240px] group">
+              <div className="aspect-[4/3] overflow-hidden rounded-2xl shadow-2xl relative z-10
+                             border-4 border-white/90 transform transition-all duration-500
+                             group-hover:-translate-y-1 group-hover:shadow-2xl">
                 <Image
                   src={selectedAlbum.src}
                   alt={selectedAlbum.title}
                   width={400}
                   height={300}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/placeholder-album.jpg';
                   }}
                 />
               </div>
-              <div className="absolute -bottom-4 -right-4 bg-white p-2 rounded-full shadow-lg border border-gray-200">
-                <div className="bg-blue-100 p-2 rounded-full">
+              <div className="absolute -bottom-2 -right-2 w-full h-full rounded-2xl bg-blue-400/20 
+                              blur-md transform transition-all duration-500 group-hover:blur-lg"></div>
+              
+              {/* Floating badge */}
+              <div className="absolute -bottom-3 -right-3 bg-white p-2 rounded-full shadow-xl z-20
+                              border-2 border-white transform transition-all duration-300
+                              hover:scale-110 hover:rotate-12">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-2 rounded-full">
                   {selectedAlbum.isFavorite ? (
-                    <Star className="h-5 w-5 text-yellow-400" fill="currentColor" />
+                    <Star className="h-5 w-5 text-yellow-300" fill="currentColor" />
                   ) : (
-                    <Grid className="h-5 w-5 text-blue-600" />
+                    <Grid className="h-5 w-5 text-white" />
                   )}
                 </div>
               </div>
             </div>
             
             {/* Album metadata */}
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3">
-                <h3 className="text-2xl sm:text-3xl font-bold text-gray-800">{selectedAlbum.title}</h3>
+                <h3 className="text-3xl font-bold text-gray-800 bg-clip-text text-transparent 
+                              bg-gradient-to-r from-blue-600 to-blue-400">
+                  {selectedAlbum.title}
+                </h3>
                 {selectedAlbum.isFavorite && (
                   <Star className="h-6 w-6 text-yellow-400" fill="currentColor" />
                 )}
               </div>
+              
               <p className="text-gray-600">{selectedAlbum.subtitle}</p>
               
-              {/* Action buttons with hover effects */}
-              <div className="flex flex-wrap gap-2 pt-2">
+              {/* Animated action buttons */}
+              <div className="flex flex-wrap gap-3 pt-2">
                 <Button 
-                  className="gap-2 hover:-translate-y-0.5 transition-transform" 
-                  variant="default"
+                  className="gap-2 hover:-translate-y-0.5 transition-transform duration-300
+                            bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg
+                            hover:shadow-xl hover:brightness-110"
                 >
                   <Share2 className="h-4 w-4" />
                   Share Album
                 </Button>
                 <Button 
-                  className="gap-2 hover:-translate-y-0.5 transition-transform" 
-                  variant="outline"
+                  className="gap-2 hover:-translate-y-0.5 transition-transform duration-300
+                            bg-white text-gray-800 border border-gray-300 shadow-md
+                            hover:bg-gray-50 hover:shadow-lg"
                 >
                   <DownloadIcon className="h-4 w-4" />
                   Download All
                 </Button>
                 <Button 
-                  className="gap-2 hover:-translate-y-0.5 transition-transform" 
-                  variant="outline"
+                  className="gap-2 hover:-translate-y-0.5 transition-transform duration-300
+                            bg-white text-blue-600 border border-blue-300 shadow-md
+                            hover:bg-blue-50 hover:shadow-lg"
                 >
                   <Plus className="h-4 w-4" />
                   Add Photos
                 </Button>
+              </div>
+              
+              {/* Stats */}
+              <div className="flex gap-4 pt-4">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
+                       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                  {recentImages.length} photos
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
+                       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                  12 shared
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Album Content */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="font-semibold text-gray-700 flex items-center gap-2">
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h4 className="font-semibold text-gray-700 text-lg flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -708,23 +839,29 @@ const handleAlbumClick = useCallback((album: Album) => {
               </svg>
               Photos in this album
             </h4>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 bg-white/80 px-3 py-1 rounded-full border border-gray-200">
               {recentImages.length > 0 ? `${recentImages.length} items` : 'Empty'}
             </div>
           </div>
 
           {recentImages.length > 0 ? (
-            <div className={`grid ${getGridColumns()} gap-3 sm:gap-4`}>
-              {recentImages.slice(0, 12).map((image) => (
-                <ImageCard
+            <div className={`grid ${getGridColumns()} gap-4`}>
+              {recentImages.slice(0, 12).map((image, index) => (
+                <motion.div
                   key={image.id}
-                  image={image}
-                  onConvert={handleConvert}
-                  onDelete={handleDeleteImage}
-                  onDownload={handleDownloadImage}
-                  onShare={handleShareImage}
-                  isMobile={isMobile}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <ImageCard
+                    image={image}
+                    onConvert={handleConvert}
+                    onDelete={handleDeleteImage}
+                    onDownload={handleDownloadImage}
+                    onShare={handleShareImage}
+                    isMobile={isMobile}
+                  />
+                </motion.div>
               ))}
             </div>
           ) : (
@@ -737,30 +874,35 @@ const handleAlbumClick = useCallback((album: Album) => {
             />
           )}
         </div>
-      </div>
+      </motion.div>
     ) : (
-      <div className="space-y-6">
-        {/* Featured Album section */}
+      <div className="space-y-8">
+        {/* Featured Album with spotlight effect */}
         {fixedAlbums.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold text-gray-700 flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
               Featured Album
             </h3>
-            <AlbumCard 
-              album={fixedAlbums[0]} 
-              onClick={() => handleAlbumClick(fixedAlbums[0])}
-              isMobile={isMobile}
-            />
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+            >
+              <AlbumCard 
+                album={fixedAlbums[0]} 
+                onClick={() => handleAlbumClick(fixedAlbums[0])}
+                isMobile={isMobile}
+              />
+            </motion.div>
           </div>
         )}
 
-        {/* All Albums Grid */}
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+        {/* All Albums Grid with staggered animation */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold text-gray-700 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2"></rect>
@@ -771,14 +913,21 @@ const handleAlbumClick = useCallback((album: Album) => {
           </h3>
           
           {fixedAlbums.length > 1 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {fixedAlbums.slice(1).map((album) => (
-                <AlbumCard 
-                  key={album.id} 
-                  album={album} 
-                  onClick={() => handleAlbumClick(album)}
-                  isMobile={isMobile}
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {fixedAlbums.slice(1).map((album, index) => (
+                <motion.div
+                  key={album.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ y: -5 }}
+                >
+                  <AlbumCard 
+                    album={album} 
+                    onClick={() => handleAlbumClick(album)}
+                    isMobile={isMobile}
+                  />
+                </motion.div>
               ))}
             </div>
           ) : (
