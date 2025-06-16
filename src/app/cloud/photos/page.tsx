@@ -419,27 +419,56 @@ const PhotosPage = () => {
   const handleCreateAlbum = useCallback(() => toast.info("Create new album feature will be available soon!"), []);
   const handleViewMap = useCallback(() => toast.info("View map functionality coming soon!"), []);
   const handleCategoryClick = useCallback((categoryName: string) => toast.info(`Viewing ${categoryName} category - coming soon!`), []);
-  const handleAlbumClick = useCallback((albumTitle: string) => toast.info(`Opening album: ${albumTitle} - coming soon!`), []);
+    // State for selected album
+const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+
+// Handle album click
+const handleAlbumClick = useCallback((album: Album) => {
+  setSelectedAlbum(album);
+}, []);
 
   // Static data for UI
-  const albums = useMemo((): Album[] => [
+  const fixedAlbums = useMemo((): Album[] => [
     {
       id: "1",
-      src: favoriteImages.length > 1 && favoriteImages[1] ? favoriteImages[1].src : "",
+      src: favoriteImages.length > 1 ? favoriteImages[1].src : "/placeholder-album-1.jpg",
       title: "Favorites",
-      subtitle: `${Math.min(recentImages.length, 12)} items`,
+      subtitle: `${favoriteImages.length} items`,
       isFavorite: true,
     },
     {
       id: "2",
-      src: recentImages.length > 0 ? recentImages[0].src : "",
-      title: "Recent Memories",
-      subtitle: `Created ${new Date().toLocaleDateString("default", {
-        month: "long",
-        year: "numeric",
-      })}`,
+      src: recentImages.length > 2 ? recentImages[2].src : "/placeholder-album-2.jpg",
+      title: "Vacations",
+      subtitle: "12 items",
+    },
+    {
+      id: "3",
+      src: recentImages.length > 3 ? recentImages[3].src : "/placeholder-album-3.jpg",
+      title: "Family",
+      subtitle: "8 items",
+    },
+    {
+      id: "4",
+      src: recentImages.length > 4 ? recentImages[4].src : "/placeholder-album-4.jpg",
+      title: "Friends",
+      subtitle: "15 items",
+    },
+    {
+      id: "5",
+      src: recentImages.length > 5 ? recentImages[5].src : "/placeholder-album-5.jpg",
+      title: "Work",
+      subtitle: "5 items",
+    },
+    {
+      id: "6",
+      src: recentImages.length > 6 ? recentImages[6].src : "/placeholder-album-6.jpg",
+      title: "Events",
+      subtitle: "7 items",
     },
   ], [recentImages, favoriteImages]);
+
+
 
   const categories: Category[] = [
     { name: "Selfies", icon: <Smile />, count: 12 },
@@ -472,7 +501,7 @@ const PhotosPage = () => {
       </header>
 
       <Tabs defaultValue="gallery" className="w-full">
-        <TabsList className={`grid w-full ${isMobile ? 'max-w-xs' : 'max-w-lg'} grid-cols-3 bg-slate-200/80 p-1 rounded-lg mb-4 sm:mb-6 md:mb-8`}>
+        <TabsList className={`grid w-full ${isMobile ? 'max-w-xs' : 'max-w-lg'} grid-cols-3 bg-slate-200/80  rounded-lg mb-4 sm:mb-6 md:mb-8`}>
           {TABS.map((tab) => (
             <TabsTrigger
               key={tab.value}
@@ -528,55 +557,106 @@ const PhotosPage = () => {
 
         {/* Albums Tab */}
         <TabsContent value="album" className="mt-2">
-          <div className="flex flex-col gap-4 sm:gap-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-700">My Albums</h2>
-              <Button
-                onClick={handleCreateAlbum}
-                size={isMobile ? "sm" : "default"}
-                className="flex items-center gap-1 sm:gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="text-xs sm:text-sm">New Album</span>
+  <div className="flex flex-col gap-4 sm:gap-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-lg sm:text-xl font-semibold text-gray-700">My Albums</h2>
+      {selectedAlbum && (
+        <Button
+          onClick={() => setSelectedAlbum(null)}
+          size={isMobile ? "sm" : "default"}
+          variant="ghost"
+          className="text-blue-600 hover:text-blue-700"
+        >
+          Back to albums
+        </Button>
+      )}
+    </div>
+
+    {selectedAlbum ? (
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+          <div className="w-full sm:w-1/3">
+            <div className="aspect-[4/3] overflow-hidden rounded-xl shadow-md">
+              <Image
+                src={selectedAlbum.src}
+                alt={selectedAlbum.title}
+                width={400}
+                height={300}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder-album.jpg";
+                }}
+              />
+            </div>
+          </div>
+          <div className="w-full sm:w-2/3">
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">{selectedAlbum.title}</h3>
+              {selectedAlbum.isFavorite && (
+                <Star className="h-5 w-5 text-yellow-400" fill="currentColor" />
+              )}
+            </div>
+            <p className="text-gray-600 text-sm sm:text-base mb-4">{selectedAlbum.subtitle}</p>
+            
+            <div className="flex gap-2">
+              <Button size={isMobile ? "sm" : "default"} variant="outline" className="gap-2">
+                <Share2 className="h-4 w-4" />
+                Share
+              </Button>
+              <Button size={isMobile ? "sm" : "default"} variant="outline" className="gap-2">
+                <DownloadIcon className="h-4 w-4" />
+                Download All
               </Button>
             </div>
-
-            {albums.length === 0 && !isLoading ? (
-              <EmptyStateMessage
-                icon={<FolderPlus className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-gray-400 opacity-70 mb-4" />}
-                title="No Albums Yet"
-                message="Create an album to organize your photos into collections."
-                actionText="Create First Album"
-                onActionClick={handleCreateAlbum}
-              />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                <div
-                  className="flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50/50 transition-colors cursor-pointer aspect-[4/3] hover:border-blue-400"
-                  onClick={handleCreateAlbum}
-                  role="button"
-                  tabIndex={0}
-                  onKeyPress={(e) => e.key === 'Enter' && handleCreateAlbum()}
-                  aria-label="Create new album"
-                >
-                  <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gray-100 rounded-full mb-3 sm:mb-4 text-gray-400 group-hover:text-blue-500 transition-colors">
-                    <Plus className="h-6 w-6 sm:h-8 sm:w-8" />
-                  </div>
-                  <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-800">New Album</h3>
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1">Add photos</p>
-                </div>
-                {albums.map((album) => (
-                  <AlbumCard 
-                    key={album.id} 
-                    album={album} 
-                    onClick={() => handleAlbumClick(album.title)}
-                    isMobile={isMobile}
-                  />
-                ))}
-              </div>
-            )}
           </div>
-        </TabsContent>
+        </div>
+
+        {recentImages.length > 0 ? (
+          <div className={`grid ${getGridColumns()} gap-2 sm:gap-3 md:gap-4`}>
+            {recentImages.slice(0, 12).map((image) => (
+              <ImageCard
+                key={image.id}
+                image={image}
+                onConvert={handleConvert}
+                onDelete={handleDeleteImage}
+                onDownload={handleDownloadImage}
+                onShare={handleShareImage}
+                isMobile={isMobile}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyStateMessage
+            icon={<ImageOff className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-gray-400 opacity-70 mb-4" />}
+            title="No Photos in This Album"
+            message="Add photos to this album to see them here."
+          />
+        )}
+      </div>
+    ) : (
+      <>
+        {fixedAlbums.length === 0 ? (
+          <EmptyStateMessage
+            icon={<FolderPlus className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-gray-400 opacity-70 mb-4" />}
+            title="No Albums Yet"
+            message="We couldn't find any albums in your collection."
+          />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {fixedAlbums.map((album) => (
+              <AlbumCard 
+                key={album.id} 
+                album={album} 
+                onClick={() => handleAlbumClick(album)}
+                isMobile={isMobile}
+              />
+            ))}
+          </div>
+        )}
+      </>
+    )}
+  </div>
+</TabsContent>
 
         {/* Explore Tab */}
         <TabsContent value="explore" className="mt-2">
