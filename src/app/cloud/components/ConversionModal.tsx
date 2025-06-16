@@ -417,7 +417,7 @@ const ConversionModal = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'circOut' }}
-            className="relative w-full max-w-[520px] mx-auto p-6 sm:p-8 rounded-2xl bg-gray-900/90 border border-indigo-700/50 shadow-2xl overflow-hidden max-h-[95vh] overflow-y-auto"
+            className="relative w-full max-w-[496px] mx-auto p-6 sm:p-8 rounded-2xl bg-gray-900/90 border border-indigo-700/50 shadow-2xl overflow-hidden max-h-[95vh] overflow-y-auto"
           >
             <div className="absolute inset-0 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-gray-950/80 to-gray-800/80" />
@@ -512,8 +512,7 @@ const ConversionModal = ({
                 >
                   <Progress
                     value={internalProgress}
-                    className="h-2.5 bg-gray-700/50"
-                    indicatorClassName={`${progressColor()} transition-all duration-300`}
+                    className={`${progressColor()} transition-all duration-300 h-2.5 bg-gray-700/50`}
                   />
                 </motion.div>
                 <div className="flex justify-between text-xs text-gray-400">

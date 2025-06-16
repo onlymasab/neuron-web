@@ -72,7 +72,7 @@ interface Album {
 
 interface Category {
   name: string;
-  icon: React.ReactElement<any>;
+  icon: React.ReactElement<{ className?: string }>;
   count: number;
 }
 

@@ -343,6 +343,11 @@ export default function Files() {
 
       {previewImageSrc && (
         <Dialog open={!!previewImageSrc} onOpenChange={() => setPreviewImageSrc(null)}>
+          <DialogHeader>
+            <DialogTitle>
+                Preview
+            </DialogTitle>
+          </DialogHeader>
           <DialogContent className="w-full h-auto p-0 overflow-hidden" >
             <img src={previewImageSrc} alt="Preview" className="w-[1920px] h-auto" />
           </DialogContent>
