@@ -1,4 +1,3 @@
-// Import required packages and modules
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@/lib/supabase/client';
@@ -9,17 +8,21 @@ interface CloudStore {
   uploading: boolean;
   loading: boolean;
   fetchFiles: (userId: string) => Promise<void>;
+  fetchSharedWithMeFiles: () => Promise<void>;
+  fetchSharedWithOthersFiles: () => Promise<void>;
+  fetchLikedFiles: () => Promise<void>;
   createFolder: (folderName: string, parentId?: string) => Promise<void>;
   uploadFile: (file: File, parentId?: string, onProgress?: (progress: number) => void) => Promise<void>;
   updateFile: (fileId: string, updates: Partial<CloudModel>) => Promise<void>;
   deleteFile: (fileId: string) => Promise<void>;
   reset: () => void;
+  shareFileWithUsers: (fileId: string, userIds: string[]) => Promise<void>;
 }
 
 const supabase = createClient();
 
 export const useCloudStore = create<CloudStore>((set, get) => {
-  let channel: any = null; // To store the realtime channel
+  let channel: any = null;
 
   return {
     files: [],
@@ -43,13 +46,16 @@ export const useCloudStore = create<CloudStore>((set, get) => {
 
       set({ files: data, loading: false });
 
-      // Setup realtime listener only once
+      // Realtime setup (once per session)
       if (!channel) {
         channel = supabase
           .channel(`realtime-cloud-${userId}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'cloud', filter: `user_id=eq.${userId}` }, (payload) => {
-            console.log('Realtime change:', payload);
-
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'cloud',
+            filter: `user_id=eq.${userId}`,
+          }, (payload) => {
             const currentFiles = get().files;
 
             if (payload.eventType === 'INSERT') {
@@ -58,7 +64,9 @@ export const useCloudStore = create<CloudStore>((set, get) => {
 
             if (payload.eventType === 'UPDATE') {
               set({
-                files: currentFiles.map((f) => (f.id === payload.new.id ? payload.new as CloudModel : f)),
+                files: currentFiles.map((f) =>
+                  f.id === payload.new.id ? (payload.new as CloudModel) : f
+                ),
               });
             }
 
@@ -69,9 +77,57 @@ export const useCloudStore = create<CloudStore>((set, get) => {
             }
           })
           .subscribe((status) => {
-            console.log('Realtime subscription status:', status);
+            console.log('Realtime status:', status);
           });
       }
+    },
+
+    fetchSharedWithMeFiles: async () => {
+      set({ loading: true });
+
+      const { data, error } = await supabase
+        .from('shared_with_me')
+        .select('*');
+
+      if (error) {
+        console.error('Fetch shared with me error:', error);
+        set({ loading: false });
+        throw new Error(error.message);
+      }
+
+      set({ files: data, loading: false });
+    },
+
+    fetchSharedWithOthersFiles: async () => {
+      set({ loading: true });
+
+      const { data, error } = await supabase
+        .from('shared_with_others')
+        .select('*');
+
+      if (error) {
+        console.error('Fetch shared with others error:', error);
+        set({ loading: false });
+        throw new Error(error.message);
+      }
+
+      set({ files: data, loading: false });
+    },
+
+    fetchLikedFiles: async () => {
+      set({ loading: true });
+
+      const { data, error } = await supabase
+        .from('liked_files')
+        .select('*');
+
+      if (error) {
+        console.error('Fetch liked files error:', error);
+        set({ loading: false });
+        throw new Error(error.message);
+      }
+
+      set({ files: data, loading: false });
     },
 
     createFolder: async (folderName, parentId) => {
@@ -79,6 +135,12 @@ export const useCloudStore = create<CloudStore>((set, get) => {
 
       const folderId = uuidv4();
       const folderPath = parentId ? `${parentId}/${folderName}` : folderName;
+
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) {
+        set({ uploading: false });
+        throw new Error('User not authenticated');
+      }
 
       const meta: CloudModel = {
         id: folderId,
@@ -89,7 +151,7 @@ export const useCloudStore = create<CloudStore>((set, get) => {
         mime_type: 'folder',
         file_extension: null,
         size: 0,
-        user_id: '',
+        user_id: user.data.user.id,
         is_shared: false,
         shared_with: [],
         is_liked: false,
@@ -102,18 +164,12 @@ export const useCloudStore = create<CloudStore>((set, get) => {
         updated_at: new Date().toISOString(),
       };
 
-      const user = await supabase.auth.getUser();
-      if (!user.data.user) {
-        set({ uploading: false });
-        throw new Error('User not authenticated');
-      }
-
-      meta.user_id = user.data.user.id;
-
       const emptyFile = new File([''], '.keep', { type: 'text/plain' });
       const storagePath = `${folderId}/${folderPath}/.keep`;
 
-      const { data, error } = await supabase.storage.from('cloud').upload(storagePath, emptyFile, { upsert: true });
+      const { data, error } = await supabase.storage
+        .from('cloud')
+        .upload(storagePath, emptyFile, { upsert: true });
 
       if (error) {
         set({ uploading: false });
@@ -139,6 +195,12 @@ export const useCloudStore = create<CloudStore>((set, get) => {
       const fileId = uuidv4();
       const filePath = parentId ? `${parentId}/${file.name}` : file.name;
 
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) {
+        set({ uploading: false });
+        throw new Error('User not authenticated');
+      }
+
       const meta: CloudModel = {
         id: fileId,
         name: filePath,
@@ -148,7 +210,7 @@ export const useCloudStore = create<CloudStore>((set, get) => {
         mime_type: file.type,
         file_extension: file.name.split('.').pop() || null,
         size: file.size,
-        user_id: '',
+        user_id: user.data.user.id,
         is_shared: false,
         shared_with: [],
         is_liked: false,
@@ -161,17 +223,11 @@ export const useCloudStore = create<CloudStore>((set, get) => {
         updated_at: new Date().toISOString(),
       };
 
-      const user = await supabase.auth.getUser();
-      if (!user.data.user) {
-        set({ uploading: false });
-        throw new Error('User not authenticated');
-      }
-
-      meta.user_id = user.data.user.id;
-
       const storagePath = `${fileId}/${file.name}`;
 
-      const { data, error } = await supabase.storage.from('cloud').upload(storagePath, file, { upsert: true });
+      const { data, error } = await supabase.storage
+        .from('cloud')
+        .upload(storagePath, file, { upsert: true });
 
       if (error) {
         set({ uploading: false });
@@ -232,5 +288,25 @@ export const useCloudStore = create<CloudStore>((set, get) => {
         channel = null;
       }
     },
+
+shareFileWithUsers: async (fileId: string, userIds: string[]) => {
+  if (!fileId || userIds.length === 0) {
+    throw new Error('Invalid file ID or user IDs');
+  }
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('cloud')
+    .update({
+      shared_with: userIds,
+      is_shared: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', fileId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
   };
 });

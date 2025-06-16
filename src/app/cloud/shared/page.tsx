@@ -103,8 +103,8 @@ const Shared = () => {
             <div className="w-full overflow-y-scroll no-scrollbar h-[70vh]">
               <RecentFiles 
                 id="shared"
-                files={sharedFiles.sharedWithMe}
-                sharedByMe={sharedFiles.sharedByMe}
+                
+               
               />
             </div>
           )}

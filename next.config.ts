@@ -6,14 +6,27 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'fmbwoqdvvbcgicdotadw.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/**', // adjust if needed
+        pathname: '/storage/v1/object/public/**',
       },
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
-        port: '',
-        pathname: '/**', // match all paths
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'source.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com', // ✅ Recommended for static image links
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos', // ✅ Optional: more reliable placeholder service
+        pathname: '/**',
       },
     ],
   },

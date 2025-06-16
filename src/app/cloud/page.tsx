@@ -40,6 +40,7 @@ import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCloudStore } from "@/stores/useCloudStore";
 import { CloudModel } from "@/types/CloudModel";
+import { createClient } from "@/lib/supabase/client";
 
 export default function Home() {
   const router = useRouter();
@@ -48,6 +49,43 @@ export default function Home() {
   const [editFileId, setEditFileId] = useState<string>("");
   const [editName, setEditName] = useState("");
   const [rowSelection, setRowSelection] = useState({});
+const supabase = createClient();
+
+async function fetchUsersByEmails(emails: string[]) {
+  // Step 1: Set allowed emails using your RPC function
+  const { error: rpcError } = await supabase.rpc('set_allowed_emails', {
+    allowed_emails: emails,
+  });
+
+  if (rpcError) {
+    console.error('Error setting allowed emails:', rpcError);
+    return null;
+  }
+
+  // Step 2: Now fetch the users
+  const { data: users, error } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .in('email', ['mahnoorbabar61@gmail.com']);
+
+  if (error) {
+    console.error('Error fetching users:', error);
+    return null;
+  }
+
+  return users;
+}
+
+// ✅ Example usage
+const emailArray = ['mahnoorbabar61@gmail.com', 'fitmorelifenow@gmail.com'];
+
+fetchUsersByEmails(emailArray).then((users) => {
+  if (users?.length) {
+    console.log('✅ Fetched users:', users);
+  } else {
+    console.log('❌ No users found for the given emails.');
+  }
+});
 
   // // Redirect to login if not authenticated
   // useEffect(() => {
