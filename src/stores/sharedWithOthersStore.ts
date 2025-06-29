@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { createClient } from '@/lib/supabase/client';
 import { CloudModel } from '@/types/CloudModel';
@@ -39,7 +40,6 @@ export const useSharedWithOthersStore = create<SharedWithOthersStore>((set, get)
 
     set({ sharedFiles: data, loading: false });
 
-    // Setup realtime listener once
     if (!channel) {
       channel = supabase
         .channel(`realtime-shared-with-others-${user.data.user.id}`)
@@ -92,55 +92,64 @@ export const useSharedWithOthersStore = create<SharedWithOthersStore>((set, get)
     }
   },
 
-  shareFile: async (fileId, userEmailOrId) => {
-    let targetUserId = userEmailOrId;
+  // ✅ Cleaned up shareFile function
 
-    // If input is an email, find the user ID from profiles
-    if (userEmailOrId.includes('@')) {
-      const { data: user, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', userEmailOrId)
-        .single();
+ shareFile: async (fileId, userEmailOrId) => {
+  const supabase = createClient();
 
-      if (error || !user) {
-        throw new Error('User not found with this email.');
-      }
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+  if (!currentUser) throw new Error('User not authenticated');
 
-      targetUserId = user.id;
-    }
+  // Find user to share with
+  const { data: user, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .ilike('email', userEmailOrId) 
+    .single();
 
-    const { data: fileData, error: fetchError } = await supabase
-      .from('cloud')
-      .select('shared_with')
-      .eq('id', fileId)
-      .single();
+  if (error || !user) {
+    throw new Error('User not found with this email.');
+  }
 
-    if (fetchError) {
-      throw new Error(`Failed to fetch file: ${fetchError.message}`);
-    }
+  const targetUserId = user.id;
 
-    const existingSharedWith = fileData?.shared_with ?? [];
+  // Fetch current shared_with list
+  
+  const { data: fileData, error: fetchError } = await supabase
+    .from('cloud')
+    .select('shared_with')
+    .eq('id', fileId)
+    .single();
 
-    if (existingSharedWith.includes(targetUserId)) {
-      throw new Error('Already shared with this user.');
-    }
+  if (fetchError) {
+    throw new Error(`Failed to fetch file: ${fetchError.message}`);
+  }
 
-    const updatedSharedWith = [...existingSharedWith, targetUserId];
+  const existingSharedWith = fileData?.shared_with ?? [];
 
-    const { error: updateError } = await supabase
-      .from('cloud')
-      .update({
-        shared_with: updatedSharedWith,
-        is_shared: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', fileId);
+  if (existingSharedWith.includes(targetUserId)) {
+    throw new Error('Already shared with this user.');
+  }
 
-    if (updateError) {
-      throw new Error(`Failed to share file: ${updateError.message}`);
-    }
-  },
+  const updatedSharedWith = [...existingSharedWith, targetUserId];
+
+  const { error: updateError } = await supabase
+    .from('cloud')
+    .update({
+      shared_with: updatedSharedWith,
+      is_shared: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', fileId);
+
+  if (updateError) {
+    throw new Error(`Failed to update cloud record: ${updateError.message}`);
+  }
+
+  // ✅ Success
+  console.log('✅ File shared successfully');
+},
+
 
   unshareFile: async (fileId, userIdsToRemove) => {
     const { data: fileData, error: fetchError } = await supabase
@@ -160,7 +169,7 @@ export const useSharedWithOthersStore = create<SharedWithOthersStore>((set, get)
       .update({
         shared_with: updatedSharedWith,
         updated_at: new Date().toISOString(),
-        is_shared: updatedSharedWith.length > 0, // if empty, unshare
+        is_shared: updatedSharedWith.length > 0,
       })
       .eq('id', fileId);
 

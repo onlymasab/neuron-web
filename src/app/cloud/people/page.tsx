@@ -1,93 +1,90 @@
 'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import React from 'react'
+import Image from 'next/image';
+import { createClient } from '@/lib/supabase/client';
 
-export default function Page() {
-    const persons = [
-        {
-            id: "1",
-            name: "Alina Hania",
-            email: "example@email.com",
-            fileCount: "25",
-            avatar: "/images/p1.png"
-        },
-        {
-            id: "2",
-            name: "John Doe",
-            email: "john.doe@example.com",
-            fileCount: "20",
-            avatar: "/images/p2.png"
-        },
-        {
-            id: "3",
-            name: "richard",
-            email: "rici@example.com",
-            fileCount: "15",
-            avatar: "/images/p3.png"
-        },
-        {
-            id: "4",
-            name: "Alina Hania",
-            email: "example@email.com",
-            fileCount: "25",
-            avatar: "/images/p1.png"
-        },
-        {
-            id: "5",
-            name: "Alina Hania",
-            email: "example@email.com",
-            fileCount: "25",
-            avatar: "/images/p1.png"
-        },
-        {
-            id: "6",
-            name: "John Doe",
-            email: "john.doe@example.com",
-            fileCount: "20",
-            avatar: "/images/p2.png"
-        },
-        {
-            id: "7",
-            name: "richard",
-            email: "rici@example.com",
-            fileCount: "15",
-            avatar: "/images/p3.png"
-        },
-        {
-            id: "8",
-            name: "Alina Hania",
-            email: "example@email.com",
-            fileCount: "25",
-            avatar: "/images/p1.png"
-        },
+interface Person {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url: string | null;
+  file_count: number;
+}
 
-    ]
-    const router = useRouter();
-    return (
-        <div className="flex flex-col gap-6 w-full text-4xl h-full px-15.5">
-            <h2 className="text-2xl font-medium py-[3vh] border-b border-b-[#A2A2A2]">People</h2>
-            <div className='mt-[2.5vh] flex flex-wrap gap-4'>
-                {
-                    persons.map((person) => (
-                        <Link href={`/cloud/people/${person.id}`} key={person.id}>
-                            <article className="flex flex-col gap-[3vh] p-4 bg-white rounded-lg 2xl:w-58 w-43 shadow-[0px_0px_4px_rgba(0,0,0,0.15)]">
-                                <header className="flex justify-between items-start w-full text-[10px] font-medium tracking-wide">
-                                    <img src={person.avatar} alt="People" className="size-[clamp(3vw,40px,5vw)] rounded-full object-contain aspect-square" />
-                                    <p>{person.fileCount} Files</p>
-                                </header>
+export default function PeoplePage() {
+  const [people, setPeople] = useState<Person[]>([]);
+  const [loading, setLoading] = useState(true);
 
-                                <section className="max-w-full">
-                                    <h2 className="text-[clamp(1rem,1.3vw,1.5rem)] font-medium text-black">{person.name}</h2>
-                                    <p className="mt-1 text-xs 2xl:text-sm font-semibold tracking-normal text-[#74726f]">
-                                        {person.email}
-                                    </p>
-                                </section>
-                            </article>
-                        </Link>
-                    ))
-                }
-            </div>
+  useEffect(() => {
+    const fetchPeople = async () => {
+      const supabase = createClient();
+
+      // Query for users who were shared files (unique users)
+      const { data, error } = await supabase
+        .from('shared_user_profiles') // make sure this view/table exists
+        .select('id, name, email, avatar_url, file_count');
+
+      if (!error && data) {
+        setPeople(data);
+      } else {
+        console.error('Failed to fetch shared user profiles:', error);
+      }
+
+      setLoading(false);
+    };
+
+    fetchPeople();
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-6 w-full text-4xl h-full px-15.5">
+      <h2 className="text-2xl font-medium py-[3vh] border-b border-b-[#A2A2A2]">
+        People
+      </h2>
+
+      {loading ? (
+        <p className="text-gray-500 text-base">Loading...</p>
+      ) : people.length === 0 ? (
+        <p className="text-gray-500 text-base">No people found.</p>
+      ) : (
+        <div className="mt-[2.5vh] flex flex-wrap gap-4">
+          {people.map((person) => (
+            <Link
+              href={`/cloud/people/${person.id}`}
+              key={person.id}
+              className="flex flex-col gap-[3vh] p-4 bg-white rounded-lg 2xl:w-58 w-43 shadow-[0px_0px_4px_rgba(0,0,0,0.15)]"
+            >
+              <header className="flex justify-between items-start w-full text-[10px] font-medium tracking-wide">
+                {person.avatar_url ? (
+                  <Image
+                    src={person.avatar_url}
+                    alt={person.name}
+                    width={40}
+                    height={40}
+                    className="rounded-full object-cover size-[clamp(3vw,40px,5vw)]"
+                  />
+                ) : (
+                  <div className="size-[clamp(3vw,40px,5vw)] rounded-full bg-[#c9c9c9] text-white font-semibold flex items-center justify-center">
+                    {person.name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <p>{person.file_count} Files</p>
+              </header>
+
+              <section className="max-w-full">
+                <h2 className="text-[clamp(1rem,1.3vw,1.5rem)] font-medium text-black">
+                  {person.name}
+                </h2>
+                <p className="mt-1 text-xs 2xl:text-sm font-semibold tracking-normal text-[#74726f]">
+                  {person.email}
+                </p>
+              </section>
+            </Link>
+          ))}
         </div>
-    )
+      )}
+    </div>
+  );
 }
